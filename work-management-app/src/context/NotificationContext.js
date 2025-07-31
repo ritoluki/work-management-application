@@ -16,7 +16,65 @@ export const NotificationProvider = ({ children, user }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const stompClient = useRef(null);
-  const [isConnected, setIsConnected] = useState(false);
+
+  // Helper functions
+  const showBrowserNotification = (notification) => {
+    if (Notification.permission === 'granted') {
+      const browserNotification = new Notification(notification.title, {
+        body: notification.message,
+        icon: '/favicon.ico',
+        tag: notification.id.toString(),
+        silent: false
+      });
+
+      // Auto close after 5 seconds
+      setTimeout(() => {
+        browserNotification.close();
+      }, 5000);
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      // Create a subtle notification sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  };
+
+  // Function to create detailed notification messages
+  const createDetailedMessage = (type, data) => {
+    const { taskName, workspaceName, boardName, groupName, dueDate, assignedBy, updatedBy } = data;
+    const dueDateFormatted = dueDate ? new Date(dueDate).toLocaleDateString('vi-VN') : '';
+    
+    switch (type) {
+      case 'TASK_ASSIGNED':
+        return `Bạn vừa được ${assignedBy} giao task "${taskName}" (hạn: ${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'TASK_UPDATED':
+        return `Task "${taskName}" đã được ${updatedBy} cập nhật trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'DEADLINE_WARNING':
+        return `Task "${taskName}" sẽ đến hạn (${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'TASK_COMPLETED':
+        return `Task "${taskName}" đã được hoàn thành trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      default:
+        return data.message || '';
+    }
+  };
 
   // Initialize STOMP WebSocket connection
   useEffect(() => {
@@ -40,14 +98,41 @@ export const NotificationProvider = ({ children, user }) => {
 
         client.onConnect = function (frame) {
           console.log('Connected to WebSocket: ' + frame);
-          setIsConnected(true);
           
           // Subscribe to user-specific notification topic
           client.subscribe(`/topic/notifications/${user.id}`, function (message) {
             try {
               const notification = JSON.parse(message.body);
               console.log('Received notification via WebSocket:', notification);
-              addNotification(notification);
+              
+              // Process the notification to add enhanced details
+              const enhancedNotification = {
+                ...notification,
+                id: Date.now(), // Temporary ID
+                createdAt: new Date(),
+                isRead: false
+              };
+
+              // Parse metadata if exists
+              if (notification.metadata) {
+                try {
+                  const taskDetails = JSON.parse(notification.metadata);
+                  enhancedNotification.taskDetails = taskDetails;
+                  // Create enhanced message
+                  enhancedNotification.message = createDetailedMessage(notification.type, taskDetails);
+                } catch (e) {
+                  console.error('Error parsing notification metadata:', e);
+                }
+              }
+
+              setNotifications(prev => [enhancedNotification, ...prev]);
+              setUnreadCount(prev => prev + 1);
+
+              // Show browser notification if permission granted
+              showBrowserNotification(enhancedNotification);
+
+              // Play notification sound (optional)
+              playNotificationSound();
             } catch (error) {
               console.error('Error parsing notification:', error);
             }
@@ -69,12 +154,10 @@ export const NotificationProvider = ({ children, user }) => {
         client.onStompError = function (frame) {
           console.error('Broker reported error: ' + frame.headers['message']);
           console.error('Additional details: ' + frame.body);
-          setIsConnected(false);
         };
 
         client.onWebSocketClose = function (event) {
           console.log('WebSocket connection closed');
-          setIsConnected(false);
         };
 
         client.activate();
@@ -100,7 +183,6 @@ export const NotificationProvider = ({ children, user }) => {
   useEffect(() => {
     const loadNotifications = async () => {
       try {
-        // Load notifications from backend API
         const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread`);
         if (response.ok) {
           const notificationData = await response.json();
@@ -122,7 +204,7 @@ export const NotificationProvider = ({ children, user }) => {
           setUnreadCount(enhancedNotifications.filter(n => !n.isRead).length);
         }
       } catch (error) {
-        console.error('Failed to load notifications:', error);
+        console.error('Failed to load notifications from backend:', error);
         // Fallback to mock data for development
         const mockNotifications = [
           {
@@ -189,34 +271,6 @@ export const NotificationProvider = ({ children, user }) => {
       loadNotifications();
     }
   }, [user?.id]);
-
-  const addNotification = (notification) => {
-    const newNotification = {
-      ...notification,
-      id: Date.now(), // Temporary ID
-      createdAt: new Date(),
-      isRead: false
-    };
-
-    // Parse metadata if exists
-    if (notification.metadata) {
-      try {
-        const taskDetails = JSON.parse(notification.metadata);
-        newNotification.taskDetails = taskDetails;
-      } catch (e) {
-        console.error('Error parsing notification metadata:', e);
-      }
-    }
-
-    setNotifications(prev => [newNotification, ...prev]);
-    setUnreadCount(prev => prev + 1);
-
-    // Show browser notification if permission granted
-    showBrowserNotification(newNotification);
-
-    // Play notification sound (optional)
-    playNotificationSound();
-  };
 
   const markAsRead = async (notificationId) => {
     try {
@@ -288,45 +342,6 @@ export const NotificationProvider = ({ children, user }) => {
     }
   };
 
-  const showBrowserNotification = (notification) => {
-    if (Notification.permission === 'granted') {
-      const browserNotification = new Notification(notification.title, {
-        body: notification.message,
-        icon: '/favicon.ico',
-        tag: notification.id.toString(),
-        silent: false
-      });
-
-      // Auto close after 5 seconds
-      setTimeout(() => {
-        browserNotification.close();
-      }, 5000);
-    }
-  };
-
-  const playNotificationSound = () => {
-    try {
-      // Create a subtle notification sound
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-      
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.2);
-    } catch (error) {
-      console.log('Could not play notification sound:', error);
-    }
-  };
-
   const requestNotificationPermission = async () => {
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
@@ -348,29 +363,9 @@ export const NotificationProvider = ({ children, user }) => {
     };
   };
 
-  // Function to create detailed notification messages
-  const createDetailedMessage = (type, data) => {
-    const { taskName, workspaceName, boardName, groupName, dueDate, assignedBy, updatedBy } = data;
-    const dueDateFormatted = dueDate ? new Date(dueDate).toLocaleDateString('vi-VN') : '';
-    
-    switch (type) {
-      case 'TASK_ASSIGNED':
-        return `Bạn vừa được ${assignedBy} giao task "${taskName}" (hạn: ${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
-      case 'TASK_UPDATED':
-        return `Task "${taskName}" đã được ${updatedBy} cập nhật trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
-      case 'DEADLINE_WARNING':
-        return `Task "${taskName}" sẽ đến hạn (${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
-      case 'TASK_COMPLETED':
-        return `Task "${taskName}" đã được hoàn thành trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
-      default:
-        return data.message || '';
-    }
-  };
-
   const value = {
     notifications,
     unreadCount,
-    addNotification,
     markAsRead,
     markAllAsRead,
     clearAll,

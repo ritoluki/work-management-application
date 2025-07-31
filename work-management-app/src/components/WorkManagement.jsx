@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Plus, Edit2, Trash2, Check } from "lucide-react";
+import { ChevronDown, Plus, Edit2, Trash2, Check, Search, X } from "lucide-react";
 import TaskGroup from './TaskGroup';
 import UserDropdown from './UserDropdown';
 import UserProfile from './UserProfile';
@@ -801,6 +801,11 @@ const WorkManagement = ({ user, onLogout }) => {
 
   // Xử lý thay đổi trong thanh tìm kiếm (để xóa bộ lọc)
   const handleSearchQueryChange = (query) => {
+    // Không clear filter nếu nó được set từ notification và user chưa search gì khác
+    if (searchFilter?.fromNotification && (!query || query.trim() === '')) {
+      return; // Giữ nguyên filter từ notification
+    }
+    
     if (!query || query.trim() === '') {
       // Xóa bộ lọc khi tìm kiếm trống
       setSearchFilter(null);
@@ -818,7 +823,7 @@ const WorkManagement = ({ user, onLogout }) => {
   };
 
   // Xử lý điều hướng đến task từ thông báo
-  const handleNavigateToTask = (navigationData) => {
+  const handleNavigateToTask = async (navigationData) => {
     if (!navigationData) return;
     
     console.log('Navigating to task:', navigationData);
@@ -843,22 +848,27 @@ const WorkManagement = ({ user, onLogout }) => {
       return;
     }
     
-    // Chuyển đến workspace và board
+    // Chuyển đến workspace và board trước
     setCurrentWorkspaceId(targetWorkspace.id);
     setCurrentBoardId(targetBoard.id);
     
-    // Tạo search filter để highlight task
-    if (navigationData.taskId && navigationData.groupName) {
-      setSearchFilter({
-        type: 'task',
-        taskId: navigationData.taskId,
-        groupName: navigationData.groupName,
-        searchTerm: navigationData.taskName?.toLowerCase() || ''
-      });
-    }
-    
     // Mở rộng tất cả groups để user có thể thấy task
     setAllGroupsExpanded(true);
+    
+    // Đặt search filter với delay để đảm bảo data đã load xong
+    setTimeout(() => {
+      if (navigationData.taskId && navigationData.groupName) {
+        console.log('Setting search filter for task:', navigationData.taskId);
+        setSearchFilter({
+          type: 'task',
+          taskId: navigationData.taskId,
+          groupName: navigationData.groupName,
+          searchTerm: navigationData.taskName?.toLowerCase() || '',
+          // Thêm flag để biết đây là từ notification
+          fromNotification: true
+        });
+      }
+    }, 1000); // Delay 1 giây để đảm bảo data đã load
   };
 
   // Loading state
@@ -952,7 +962,39 @@ const WorkManagement = ({ user, onLogout }) => {
         </div>
       </header>
 
-      <div className="flex h-screen relative">
+      {/* Filter Indicator */}
+      {searchFilter && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <Search className="w-4 h-4" />
+              <span>
+                {searchFilter.fromNotification ? (
+                  <>
+                    Đang xem task: <span className="font-medium">"{searchFilter.taskName}"</span>
+                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">
+                      từ thông báo
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Đang lọc task: <span className="font-medium">"{searchFilter.taskName}"</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() => setSearchFilter(null)}
+              className="flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              {searchFilter.fromNotification ? 'Trở về board' : 'Xóa bộ lọc'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`flex relative ${searchFilter ? 'h-[calc(100vh-120px)]' : 'h-screen'}`}>
         {/* Sidebar */}
         <aside className={`transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-72'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-600 h-full flex flex-col`}>
           {/* Workspace dropdown + plus + collapse button */}

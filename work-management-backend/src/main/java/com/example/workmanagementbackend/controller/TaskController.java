@@ -216,28 +216,48 @@ public class TaskController {
             
             if (notificationUserId != null) {
                 System.out.println("Sending notification for task update...");
-                NotificationDTO notification = new NotificationDTO();
-                notification.setUserId(notificationUserId);
                 
-                // Different notification for task completion
+                // Different notification types based on completion status
+                Notification.NotificationType notificationType;
                 if (taskCompleted) {
-                    notification.setType(Notification.NotificationType.TASK_COMPLETED);
-                    notification.setTitle("Task hoàn thành");
-                    notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được hoàn thành! 🎉");
+                    notificationType = Notification.NotificationType.TASK_COMPLETED;
                     System.out.println("Sending TASK_COMPLETED notification");
                 } else {
-                    notification.setType(Notification.NotificationType.TASK_UPDATED);
-                    notification.setTitle("Task được cập nhật");
-                    notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được cập nhật");
+                    notificationType = Notification.NotificationType.TASK_UPDATED;
                     System.out.println("Sending TASK_UPDATED notification");
                 }
                 
-                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
-                notification.setRelatedEntityId(updatedTask.getId());
-                notification.setCreatedById(currentUserId); // User who updated the task
-                
-                notificationService.sendNotification(notification);
-                System.out.println("Notification sent successfully!");
+                // Use enhanced notification method
+                try {
+                    notificationService.sendEnhancedTaskNotification(
+                        updatedTask.getId(),
+                        notificationUserId, 
+                        notificationType,
+                        currentUserId
+                    );
+                    System.out.println("Enhanced notification sent successfully!");
+                } catch (Exception notificationError) {
+                    System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
+                    
+                    // Fallback to basic notification
+                    NotificationDTO notification = new NotificationDTO();
+                    notification.setUserId(notificationUserId);
+                    notification.setType(notificationType);
+                    
+                    if (taskCompleted) {
+                        notification.setTitle("Task hoàn thành");
+                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được hoàn thành! 🎉");
+                    } else {
+                        notification.setTitle("Task được cập nhật");
+                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được cập nhật");
+                    }
+                    
+                    notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                    notification.setRelatedEntityId(updatedTask.getId());
+                    notification.setCreatedById(currentUserId);
+                    
+                    notificationService.sendNotification(notification);
+                }
             } else {
                 System.out.println("No assigned user or creator - skipping notification");
             }
@@ -264,17 +284,31 @@ public class TaskController {
             
             // Send notification to assigned user
             System.out.println("Sending assignment notification to user " + userId);
-            NotificationDTO notification = new NotificationDTO();
-            notification.setUserId(userId);
-            notification.setType(Notification.NotificationType.TASK_ASSIGNED);
-            notification.setTitle("Task được giao");
-            notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
-            notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
-            notification.setRelatedEntityId(assignedTask.getId());
-            notification.setCreatedById(currentUserId); // Current user assigning the task
             
-            notificationService.sendNotification(notification);
-            System.out.println("Assignment notification sent successfully!");
+            // Use enhanced notification method
+            try {
+                notificationService.sendEnhancedTaskNotification(
+                    assignedTask.getId(),
+                    userId, 
+                    Notification.NotificationType.TASK_ASSIGNED,
+                    currentUserId
+                );
+                System.out.println("Enhanced assignment notification sent successfully!");
+            } catch (Exception notificationError) {
+                System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
+                
+                // Fallback to basic notification
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(userId);
+                notification.setType(Notification.NotificationType.TASK_ASSIGNED);
+                notification.setTitle("Task được giao");
+                notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(assignedTask.getId());
+                notification.setCreatedById(currentUserId);
+                
+                notificationService.sendNotification(notification);
+            }
             
             return ResponseEntity.ok(assignedTask);
         } catch (Exception e) {

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,6 +24,10 @@ public class NotificationService {
     
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TaskService taskService;
+    private final GroupService groupService;
+    private final BoardService boardService;
+    private final WorkspaceService workspaceService;
     
     /**
      * Send a real-time notification to a specific user
@@ -161,6 +166,161 @@ public class NotificationService {
     public NotificationDTO sendUserJoinedNotification(Long userId, String userName, String workspaceName, Long workspaceId) {
         NotificationDTO notification = NotificationDTO.userJoined(userId, userName, workspaceName, workspaceId);
         return sendNotification(notification);
+    }
+    
+    /**
+     * Send enhanced task notification with full context
+     */
+    public NotificationDTO sendEnhancedTaskNotification(Long taskId, Long userId, Notification.NotificationType type, Long currentUserId) {
+        try {
+            // Get task with location info
+            TaskLocationInfo taskInfo = getTaskLocationInfo(taskId);
+            
+            if (taskInfo != null) {
+                // Create enhanced notification with metadata
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(userId);
+                notification.setType(type);
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(taskId);
+                notification.setCreatedById(currentUserId);
+                
+                // Set basic title
+                switch (type) {
+                    case TASK_ASSIGNED:
+                        notification.setTitle("Task được giao");
+                        break;
+                    case TASK_UPDATED:
+                        notification.setTitle("Task được cập nhật");
+                        break;
+                    case TASK_COMPLETED:
+                        notification.setTitle("Task hoàn thành");
+                        break;
+                    default:
+                        notification.setTitle("Thông báo về task");
+                        break;
+                }
+                
+                // Create detailed message
+                String detailedMessage = createDetailedTaskMessage(
+                    type,
+                    taskInfo.getTaskName(),
+                    taskInfo.getDueDate() != null ? taskInfo.getDueDate().toString() : null,
+                    taskInfo.getWorkspaceName(),
+                    taskInfo.getBoardName(),
+                    taskInfo.getGroupName(),
+                    taskInfo.getAssignedBy()
+                );
+                notification.setMessage(detailedMessage);
+                
+                // Create metadata JSON for frontend
+                String metadata = String.format(
+                    "{\"taskName\":\"%s\",\"taskId\":%d,\"workspaceName\":\"%s\",\"boardName\":\"%s\",\"groupName\":\"%s\",\"dueDate\":\"%s\",\"assignedBy\":\"%s\",\"updatedBy\":\"%s\"}",
+                    escapeJson(taskInfo.getTaskName()),
+                    taskId,
+                    escapeJson(taskInfo.getWorkspaceName()),
+                    escapeJson(taskInfo.getBoardName()),
+                    escapeJson(taskInfo.getGroupName()),
+                    taskInfo.getDueDate() != null ? taskInfo.getDueDate().toString() : "",
+                    escapeJson(taskInfo.getAssignedBy() != null ? taskInfo.getAssignedBy() : ""),
+                    escapeJson(taskInfo.getAssignedBy() != null ? taskInfo.getAssignedBy() : "")
+                );
+                notification.setMetadata(metadata);
+                
+                return sendNotification(notification);
+            } else {
+                // Fallback to basic notification if task info not found
+                NotificationDTO baseNotification = new NotificationDTO();
+                baseNotification.setUserId(userId);
+                baseNotification.setType(type);
+                baseNotification.setTitle("Thông báo về task");
+                baseNotification.setMessage("Có cập nhật mới về task của bạn");
+                baseNotification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                baseNotification.setRelatedEntityId(taskId);
+                baseNotification.setCreatedById(currentUserId);
+                
+                return sendNotification(baseNotification);
+            }
+        } catch (Exception e) {
+            log.error("Failed to send enhanced task notification", e);
+            
+            // Fallback to basic notification
+            NotificationDTO baseNotification = new NotificationDTO();
+            baseNotification.setUserId(userId);
+            baseNotification.setType(type);
+            baseNotification.setTitle("Thông báo về task");
+            baseNotification.setMessage("Có cập nhật mới về task của bạn");
+            baseNotification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+            baseNotification.setRelatedEntityId(taskId);
+            baseNotification.setCreatedById(currentUserId);
+            
+            return sendNotification(baseNotification);
+        }
+    }
+    
+    /**
+     * Helper method to escape JSON strings
+     */
+    private String escapeJson(String input) {
+        if (input == null) return "";
+        return input.replace("\"", "\\\"")
+                   .replace("\\", "\\\\")
+                   .replace("\r", "\\r")
+                   .replace("\n", "\\n")
+                   .replace("\t", "\\t");
+    }
+    
+    /**
+     * Get task location information (workspace, board, group)
+     */
+    private TaskLocationInfo getTaskLocationInfo(Long taskId) {
+        try {
+            // Get task first to get group ID
+            var task = taskService.getTaskById(taskId);
+            var group = groupService.getGroupById(task.getGroupId());
+            var board = boardService.getBoardById(group.getBoardId());
+            var workspace = workspaceService.getWorkspaceById(board.getWorkspaceId());
+            
+            return new TaskLocationInfo(
+                task.getName(),
+                task.getDueDate(),
+                workspace.getName(),
+                board.getName(),
+                group.getName(),
+                "Admin" // assignedBy - we'll need to enhance this later
+            );
+        } catch (Exception e) {
+            log.error("Error getting task location info for task {}: {}", taskId, e.getMessage());
+            return new TaskLocationInfo("Unknown Task", null, "Unknown Workspace", "Unknown Board", "Unknown Group", "Admin");
+        }
+    }
+    
+    /**
+     * Helper class to hold task location information
+     */
+    private static class TaskLocationInfo {
+        private final String taskName;
+        private final LocalDate dueDate;
+        private final String workspaceName;
+        private final String boardName;
+        private final String groupName;
+        private final String assignedBy;
+        
+        public TaskLocationInfo(String taskName, LocalDate dueDate, String workspaceName, String boardName, String groupName, String assignedBy) {
+            this.taskName = taskName;
+            this.dueDate = dueDate;
+            this.workspaceName = workspaceName;
+            this.boardName = boardName;
+            this.groupName = groupName;
+            this.assignedBy = assignedBy;
+        }
+        
+        public String getTaskName() { return taskName; }
+        public LocalDate getDueDate() { return dueDate; }
+        public String getWorkspaceName() { return workspaceName; }
+        public String getBoardName() { return boardName; }
+        public String getGroupName() { return groupName; }
+        public String getAssignedBy() { return assignedBy; }
     }
     
     // Mapping methods
