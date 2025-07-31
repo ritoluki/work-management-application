@@ -203,4 +203,110 @@ public class NotificationService {
     public Long getTotalNotificationCount() {
         return notificationRepository.count();
     }
+    
+    /**
+     * Create detailed task notification with workspace, board, group information
+     */
+    @Transactional
+    public NotificationDTO sendTaskNotification(NotificationDTO baseNotification, 
+                                              String taskName, 
+                                              String dueDate,
+                                              String workspaceName, 
+                                              String boardName, 
+                                              String groupName,
+                                              String assignedBy) {
+        try {
+            // Create detailed message
+            String detailedMessage = createDetailedTaskMessage(
+                baseNotification.getType(), 
+                taskName, 
+                dueDate, 
+                workspaceName, 
+                boardName, 
+                groupName, 
+                assignedBy
+            );
+            
+            // Create task details metadata
+            String taskDetailsJson = String.format(
+                "{\"taskName\":\"%s\",\"dueDate\":\"%s\",\"workspaceName\":\"%s\",\"boardName\":\"%s\",\"groupName\":\"%s\",\"assignedBy\":\"%s\"}",
+                taskName != null ? taskName : "",
+                dueDate != null ? dueDate : "",
+                workspaceName != null ? workspaceName : "",
+                boardName != null ? boardName : "",
+                groupName != null ? groupName : "",
+                assignedBy != null ? assignedBy : ""
+            );
+            
+            // Update notification with detailed information
+            baseNotification.setMessage(detailedMessage);
+            baseNotification.setMetadata(taskDetailsJson);
+            
+            // Send the detailed notification
+            return sendNotification(baseNotification);
+            
+        } catch (Exception e) {
+            log.error("Error sending detailed task notification: {}", e.getMessage(), e);
+            // Fallback to basic notification
+            return sendNotification(baseNotification);
+        }
+    }
+    
+    /**
+     * Create detailed message for task notifications
+     */
+    private String createDetailedTaskMessage(Notification.NotificationType type, 
+                                           String taskName, 
+                                           String dueDate, 
+                                           String workspaceName, 
+                                           String boardName, 
+                                           String groupName, 
+                                           String assignedBy) {
+        switch (type) {
+            case TASK_ASSIGNED:
+                return String.format(
+                    "Bạn vừa được %s giao task \"%s\" (hạn: %s) trong workspace \"%s\" > board \"%s\" > group \"%s\"",
+                    assignedBy != null ? assignedBy : "Admin",
+                    taskName,
+                    dueDate != null ? dueDate : "chưa xác định",
+                    workspaceName,
+                    boardName,
+                    groupName
+                );
+            case TASK_UPDATED:
+                return String.format(
+                    "Task \"%s\" đã được %s cập nhật trong workspace \"%s\" > board \"%s\" > group \"%s\"",
+                    taskName,
+                    assignedBy != null ? assignedBy : "Admin",
+                    workspaceName,
+                    boardName,
+                    groupName
+                );
+            case TASK_COMPLETED:
+                return String.format(
+                    "Task \"%s\" đã được hoàn thành trong workspace \"%s\" > board \"%s\" > group \"%s\"",
+                    taskName,
+                    workspaceName,
+                    boardName,
+                    groupName
+                );
+            case DEADLINE_WARNING:
+                return String.format(
+                    "Task \"%s\" sẽ đến hạn (%s) trong workspace \"%s\" > board \"%s\" > group \"%s\"",
+                    taskName,
+                    dueDate != null ? dueDate : "sớm",
+                    workspaceName,
+                    boardName,
+                    groupName
+                );
+            default:
+                return String.format(
+                    "Task \"%s\" có cập nhật mới trong workspace \"%s\" > board \"%s\" > group \"%s\"",
+                    taskName,
+                    workspaceName,
+                    boardName,
+                    groupName
+                );
+        }
+    }
 }

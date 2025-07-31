@@ -817,6 +817,50 @@ const WorkManagement = ({ user, onLogout }) => {
     setShowUserProfile(true);
   };
 
+  // Xử lý điều hướng đến task từ thông báo
+  const handleNavigateToTask = (navigationData) => {
+    if (!navigationData) return;
+    
+    console.log('Navigating to task:', navigationData);
+    
+    // Tìm workspace theo tên
+    const targetWorkspace = data.workspaces.find(w => 
+      w.name === navigationData.workspaceName
+    );
+    
+    if (!targetWorkspace) {
+      alert(`Không tìm thấy workspace "${navigationData.workspaceName}"`);
+      return;
+    }
+    
+    // Tìm board theo tên
+    const targetBoard = targetWorkspace.boards.find(b => 
+      b.name === navigationData.boardName
+    );
+    
+    if (!targetBoard) {
+      alert(`Không tìm thấy board "${navigationData.boardName}" trong workspace "${navigationData.workspaceName}"`);
+      return;
+    }
+    
+    // Chuyển đến workspace và board
+    setCurrentWorkspaceId(targetWorkspace.id);
+    setCurrentBoardId(targetBoard.id);
+    
+    // Tạo search filter để highlight task
+    if (navigationData.taskId && navigationData.groupName) {
+      setSearchFilter({
+        type: 'task',
+        taskId: navigationData.taskId,
+        groupName: navigationData.groupName,
+        searchTerm: navigationData.taskName?.toLowerCase() || ''
+      });
+    }
+    
+    // Mở rộng tất cả groups để user có thể thấy task
+    setAllGroupsExpanded(true);
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -896,7 +940,7 @@ const WorkManagement = ({ user, onLogout }) => {
           </div>
           
           {/* Notification Bell */}
-          <NotificationDropdown />
+          <NotificationDropdown onNavigateToTask={handleNavigateToTask} />
           
           <ThemeToggle />
           <UserDropdown 

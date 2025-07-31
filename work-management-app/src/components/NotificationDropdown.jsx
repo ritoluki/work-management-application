@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, X, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, X, Check, CheckCheck, Trash2, ExternalLink, Calendar, MapPin } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ onNavigateToTask }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { 
@@ -11,7 +11,9 @@ const NotificationDropdown = () => {
     markAsRead, 
     markAllAsRead, 
     clearAll,
-    requestNotificationPermission 
+    requestNotificationPermission,
+    navigateToTask,
+    createDetailedMessage
   } = useNotification();
 
   // Close dropdown when clicking outside
@@ -42,6 +44,10 @@ const NotificationDropdown = () => {
     switch (type) {
       case 'TASK_ASSIGNED':
         return '📋';
+      case 'TASK_UPDATED':
+        return '✏️';
+      case 'TASK_COMPLETED':
+        return '✅';
       case 'COMMENT_ADDED':
         return '💬';
       case 'DEADLINE_WARNING':
@@ -76,9 +82,15 @@ const NotificationDropdown = () => {
       markAsRead(notification.id);
     }
     
-    // Navigate to related entity (task, board, etc.)
-    // This will be implemented later when we have proper routing
-    console.log('Navigate to:', notification.relatedEntityType, notification.relatedEntityId);
+    // Navigate to related task if it has task details
+    if (notification.taskDetails && onNavigateToTask) {
+      const navigationData = navigateToTask({
+        ...notification.taskDetails,
+        relatedEntityId: notification.relatedEntityId
+      });
+      onNavigateToTask(navigationData);
+      setIsOpen(false); // Close dropdown after navigation
+    }
   };
 
   return (
@@ -178,16 +190,46 @@ const NotificationDropdown = () => {
                           <h4 className="font-medium text-gray-800 dark:text-white text-sm leading-tight">
                             {notification.title}
                           </h4>
+                          
+                          {/* Detailed message based on taskDetails */}
                           <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 leading-relaxed">
-                            {notification.message}
+                            {notification.taskDetails ? 
+                              createDetailedMessage(notification.type, notification.taskDetails) 
+                              : notification.message
+                            }
                           </p>
+                          
+                          {/* Task location info */}
+                          {notification.taskDetails && (
+                            <div className="flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              <MapPin className="w-3 h-3" />
+                              <span>
+                                {notification.taskDetails.workspaceName} → {notification.taskDetails.boardName} → {notification.taskDetails.groupName}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Due date info */}
+                          {notification.taskDetails?.dueDate && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              <Calendar className="w-3 h-3" />
+                              <span>Hạn: {new Date(notification.taskDetails.dueDate).toLocaleDateString('vi-VN')}</span>
+                            </div>
+                          )}
+                          
                           <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
                             {getTimeAgo(notification.createdAt)}
                           </p>
                         </div>
                         
-                        {/* Read Status */}
+                        {/* Read Status and Navigate Icon */}
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          {notification.taskDetails && (
+                            <div className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Click để xem task">
+                              <ExternalLink className="w-3 h-3" />
+                            </div>
+                          )}
+                          
                           {!notification.isRead && (
                             <button
                               onClick={(e) => {

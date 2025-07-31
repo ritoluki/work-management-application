@@ -3,9 +3,7 @@ package com.example.workmanagementbackend.controller;
 import com.example.workmanagementbackend.dto.NotificationDTO;
 import com.example.workmanagementbackend.dto.TaskDTO;
 import com.example.workmanagementbackend.entity.Notification;
-import com.example.workmanagementbackend.service.NotificationService;
-import com.example.workmanagementbackend.service.PermissionService;
-import com.example.workmanagementbackend.service.TaskService;
+import com.example.workmanagementbackend.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +22,57 @@ public class TaskController {
     
     @Autowired
     private PermissionService permissionService;
+    
+    @Autowired
+    private GroupService groupService;
+    
+    @Autowired
+    private BoardService boardService;
+    
+    @Autowired
+    private WorkspaceService workspaceService;
+    
+    @Autowired
+    private UserService userService;
+
+    /**
+     * Helper method to get task location information
+     */
+    private TaskLocationInfo getTaskLocationInfo(Long groupId) {
+        try {
+            var group = groupService.getGroupById(groupId);
+            var board = boardService.getBoardById(group.getBoardId());
+            var workspace = workspaceService.getWorkspaceById(board.getWorkspaceId());
+            
+            return new TaskLocationInfo(
+                workspace.getName(),
+                board.getName(),
+                group.getName()
+            );
+        } catch (Exception e) {
+            System.err.println("Error getting task location info: " + e.getMessage());
+            return new TaskLocationInfo("Unknown Workspace", "Unknown Board", "Unknown Group");
+        }
+    }
+    
+    /**
+     * Helper class to hold task location information
+     */
+    private static class TaskLocationInfo {
+        private final String workspaceName;
+        private final String boardName;
+        private final String groupName;
+        
+        public TaskLocationInfo(String workspaceName, String boardName, String groupName) {
+            this.workspaceName = workspaceName;
+            this.boardName = boardName;
+            this.groupName = groupName;
+        }
+        
+        public String getWorkspaceName() { return workspaceName; }
+        public String getBoardName() { return boardName; }
+        public String getGroupName() { return groupName; }
+    }
 
     @GetMapping
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
@@ -83,18 +132,44 @@ public class TaskController {
             
             // Send notification if task is assigned to someone
             if (createdTask.getAssignedToId() != null) {
-                System.out.println("Sending task creation notification to user " + createdTask.getAssignedToId());
+                System.out.println("Sending detailed task creation notification to user " + createdTask.getAssignedToId());
+                
+                // Get task location information
+                TaskLocationInfo locationInfo = getTaskLocationInfo(createdTask.getGroupId());
+                
+                // Get assignor name
+                String assignedBy = "Admin";
+                try {
+                    var currentUserOpt = userService.getUserById(currentUserId);
+                    if (currentUserOpt.isPresent()) {
+                        assignedBy = currentUserOpt.get().getRole().toString();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Could not get current user info: " + e.getMessage());
+                }
+                
+                // Create detailed notification
                 NotificationDTO notification = new NotificationDTO();
                 notification.setUserId(createdTask.getAssignedToId());
                 notification.setType(Notification.NotificationType.TASK_ASSIGNED);
                 notification.setTitle("Task mới được giao");
-                notification.setMessage("Bạn đã được giao task mới \"" + createdTask.getName() + "\"");
+                notification.setMessage("Bạn đã được giao task mới \"" + createdTask.getName() + "\""); // Will be replaced by detailed message
                 notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
                 notification.setRelatedEntityId(createdTask.getId());
-                notification.setCreatedById(createdTask.getCreatedById()); // Task creator
+                notification.setCreatedById(currentUserId); // Task creator
                 
-                notificationService.sendNotification(notification);
-                System.out.println("Task creation notification sent successfully!");
+                // Send detailed notification
+                notificationService.sendTaskNotification(
+                    notification,
+                    createdTask.getName(),
+                    createdTask.getDueDate() != null ? createdTask.getDueDate().toString() : null,
+                    locationInfo.getWorkspaceName(),
+                    locationInfo.getBoardName(),
+                    locationInfo.getGroupName(),
+                    assignedBy
+                );
+                
+                System.out.println("Detailed task creation notification sent successfully!");
             } else {
                 System.out.println("No user assigned to new task - skipping notification");
             }
