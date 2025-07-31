@@ -407,7 +407,7 @@ const AdminPanel = ({ onClose }) => {
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                       {filteredTasks.map((task) => (
                         <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-600">
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-left">
                             <div>
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {task.name}
@@ -417,7 +417,7 @@ const AdminPanel = ({ onClose }) => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-left">
                             {task.assignedToName ? (
                               <div className="flex items-center">
                                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -439,7 +439,7 @@ const AdminPanel = ({ onClose }) => {
                               </button>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-left">
                             <span className={`inline-flex px-2 text-xs font-semibold rounded-full ${
                               task.status === 'COMPLETED' 
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -456,7 +456,7 @@ const AdminPanel = ({ onClose }) => {
                           <td className="text-left px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                             {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-left">
                             <button
                               onClick={() => {
                                 setSelectedTask(task);
