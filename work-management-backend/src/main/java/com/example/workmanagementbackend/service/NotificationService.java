@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,11 +36,20 @@ public class NotificationService {
             
             NotificationDTO result = mapToDTO(savedNotification);
             
-            // Send real-time notification via WebSocket
-            String destination = "/user/" + notificationDTO.getUserId() + "/queue/notifications";
-            messagingTemplate.convertAndSend(destination, result);
+            // Send real-time notification via WebSocket  
+            String notificationDestination = "/topic/notifications/" + notificationDTO.getUserId();
+            log.info("Sending WebSocket notification to {}: {}", notificationDestination, result.getTitle());
+            messagingTemplate.convertAndSend(notificationDestination, result);
             
-            log.info("Notification sent to user {}: {}", notificationDTO.getUserId(), notificationDTO.getTitle());
+            // Send updated unread count
+            Long unreadCount = getUnreadCount(notificationDTO.getUserId());
+            Map<String, Object> unreadCountMessage = Map.of("count", unreadCount);
+            String countDestination = "/topic/unread-count/" + notificationDTO.getUserId();
+            log.info("Sending WebSocket unread count to {}: {}", countDestination, unreadCountMessage);
+            messagingTemplate.convertAndSend(countDestination, unreadCountMessage);
+            
+            log.info("Notification sent to user {}: {} (unread count: {})", 
+                notificationDTO.getUserId(), notificationDTO.getTitle(), unreadCount);
             return result;
             
         } catch (Exception e) {
@@ -185,5 +195,12 @@ public class NotificationService {
                 .createdById(entity.getCreatedById())
                 .metadata(entity.getMetadata())
                 .build();
+    }
+    
+    /**
+     * Get total notification count for testing database connection
+     */
+    public Long getTotalNotificationCount() {
+        return notificationRepository.count();
     }
 }
