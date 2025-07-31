@@ -63,7 +63,7 @@ PERMISSION MATRIX CHI TIẾT
 ========================
 Chức năng                    | Owner | Admin | Manager | Member | Viewer
 ---------------------------- |-------|-------|---------|--------|--------
-Tạo workspace               | ✅    | ❌    | ❌      | ❌     | ❌
+Tạo workspace               | ✅    | ✅    | ❌      | ❌     | ❌
 Xóa workspace               | ✅    | ❌    | ❌      | ❌     | ❌
 Archive workspace           | ✅    | ✅    | ❌      | ❌     | ❌
 Sửa workspace settings      | ✅    | ✅    | ❌      | ❌     | ❌

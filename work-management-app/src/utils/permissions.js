@@ -1,7 +1,7 @@
 // Permission matrix - defines what each role can do
 export const PERMISSIONS = {
   // Workspace Management
-  'CREATE_WORKSPACE': ['OWNER'],
+  'CREATE_WORKSPACE': ['OWNER', 'ADMIN'], // ADMIN can also create workspace
   'DELETE_WORKSPACE': ['OWNER'], 
   'EDIT_WORKSPACE': ['OWNER', 'ADMIN'],
   'VIEW_WORKSPACE': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
