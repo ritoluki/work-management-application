@@ -26,7 +26,7 @@ export const NotificationProvider = ({ children, user }) => {
       try {
         // Create STOMP client with SockJS
         const client = new Client({
-          webSocketFactory: () => new SockJS('http://localhost:8080/notifications'),
+          webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
           connectHeaders: {
             userId: user.id.toString()
           },
