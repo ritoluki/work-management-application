@@ -7,7 +7,6 @@ import AdminPanel from './AdminPanel';
 import ThemeToggle from './ThemeToggle';
 import SearchBar from './SearchBar';
 import NotificationDropdown from './NotificationDropdown';
-import NotificationTestButton from './NotificationTestButton';
 import { NotificationProvider } from '../context/NotificationContext';
 import { canDo, getPermissionDeniedMessage } from '../utils/permissions';
 import { getRoleBadge, getRoleIcon } from '../utils/mockUsers';
@@ -1395,9 +1394,6 @@ const WorkManagement = ({ user, onLogout }) => {
       {showAdminPanel && (
         <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
-
-      {/* Test Button - Only in development */}
-      {process.env.NODE_ENV === 'development' && <NotificationTestButton currentUser={currentUser} />}
       </div>
     </NotificationProvider>
   );
