@@ -4,6 +4,7 @@ import com.example.workmanagementbackend.dto.NotificationDTO;
 import com.example.workmanagementbackend.dto.TaskDTO;
 import com.example.workmanagementbackend.entity.Notification;
 import com.example.workmanagementbackend.service.NotificationService;
+import com.example.workmanagementbackend.service.PermissionService;
 import com.example.workmanagementbackend.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,9 @@ public class TaskController {
     
     @Autowired
     private NotificationService notificationService;
+    
+    @Autowired
+    private PermissionService permissionService;
 
     @GetMapping
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
@@ -66,8 +70,14 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO) {
+    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO, @RequestParam Long currentUserId) {
         try {
+            // Check permission - only MANAGER and above can create tasks
+            if (!permissionService.canCreateTask(currentUserId)) {
+                System.err.println("User " + currentUserId + " does not have permission to create tasks");
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             System.out.println("Creating new task: " + taskDTO.getName());
             TaskDTO createdTask = taskService.createTask(taskDTO);
             
@@ -98,8 +108,14 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO) {
+    public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO, @RequestParam Long currentUserId) {
         try {
+            // Check permission - MANAGER+ can edit any task, MEMBER can only edit assigned tasks
+            if (!permissionService.canEditTask(currentUserId, id)) {
+                System.err.println("User " + currentUserId + " does not have permission to edit task " + id);
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             System.out.println("Updating task with ID: " + id);
             System.out.println("TaskDTO: " + taskDTO);
             
@@ -143,7 +159,7 @@ public class TaskController {
                 
                 notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
                 notification.setRelatedEntityId(updatedTask.getId());
-                notification.setCreatedById(1L); // Assuming current user ID is 1
+                notification.setCreatedById(currentUserId); // User who updated the task
                 
                 notificationService.sendNotification(notification);
                 System.out.println("Notification sent successfully!");
@@ -160,8 +176,14 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/assign/{userId}")
-    public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId) {
+    public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId, @RequestParam Long currentUserId) {
         try {
+            // Check permission - only MANAGER+ can assign tasks
+            if (!permissionService.canAssignTask(currentUserId)) {
+                System.err.println("User " + currentUserId + " does not have permission to assign tasks");
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             System.out.println("Assigning task " + taskId + " to user " + userId);
             TaskDTO assignedTask = taskService.assignTask(taskId, userId);
             
@@ -174,7 +196,7 @@ public class TaskController {
             notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
             notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
             notification.setRelatedEntityId(assignedTask.getId());
-            notification.setCreatedById(1L); // Current user assigning the task
+            notification.setCreatedById(currentUserId); // Current user assigning the task
             
             notificationService.sendNotification(notification);
             System.out.println("Assignment notification sent successfully!");
@@ -188,8 +210,14 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id, @RequestParam Long currentUserId) {
         try {
+            // Check permission - MANAGER+ can delete any task, MEMBER can only delete own tasks
+            if (!permissionService.canDeleteTask(currentUserId, id)) {
+                System.err.println("User " + currentUserId + " does not have permission to delete task " + id);
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             taskService.deleteTask(id);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
