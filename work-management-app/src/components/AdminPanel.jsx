@@ -163,7 +163,7 @@ const AdminPanel = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1050 }}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1200 }}>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl h-5/6 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -487,7 +487,7 @@ const AdminPanel = ({ onClose }) => {
 
       {/* Task Assignment Modal */}
       {showTaskAssignModal && selectedTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1055 }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1210 }}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-96 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
               Assign Task: {selectedTask.title}
@@ -527,7 +527,7 @@ const AdminPanel = ({ onClose }) => {
 
       {/* Add User Modal */}
       {showAddUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 10000 }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1210 }}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-96 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
               Thêm nhân viên mới
