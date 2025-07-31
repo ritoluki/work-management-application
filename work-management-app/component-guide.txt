@@ -1,0 +1,398 @@
+HƯỚNG DẪN CHỨC NĂNG CÁC COMPONENT - WORK MANAGEMENT APPLICATION
+================================================================
+
+TỔNG QUAN DỰ ÁN
+=================
+
+Work Management Application là một ứng dụng quản lý công việc được xây dựng bằng React.js, 
+mô phỏng các tính năng của các công cụ như Monday.com, Trello. Ứng dụng sử dụng in-memory 
+state management (không cần database) để quản lý dữ liệu và cung cấp trải nghiệm người dùng 
+mượt mà với real-time updates.
+
+KIẾN TRÚC ỨNG DỤNG
+==================
+
+1. ENTRY POINT: App.js
+   - Component gốc của ứng dụng
+   - Quản lý authentication state (user)
+   - Điều hướng giữa LoginForm, RegisterForm và WorkManagement
+   - Wrap toàn bộ app trong ThemeProvider
+
+2. THEME MANAGEMENT: ThemeContext.js
+   - Context Provider quản lý dark/light mode
+   - Tự động detect system preference
+   - Lưu theme preference vào localStorage
+   - Cung cấp useTheme hook để components khác sử dụng
+
+3. STATE MANAGEMENT
+   - Local React state (useState)
+   - Immutable state updates
+   - Hierarchical data structure: Workspaces > Boards > Groups > Tasks
+
+LUỒNG HOẠT ĐỘNG CHÍNH
+=====================
+
+1. User mở app → hiển thị LoginForm
+2. Login/Register thành công → chuyển sang WorkManagement
+3. WorkManagement load INITIAL_DATA và hiển thị dashboard
+4. User có thể tạo/sửa/xóa workspaces, boards, groups, tasks
+5. Mọi thay đổi được update real-time trong UI
+
+CHI TIẾT TỪNG COMPONENT
+========================
+
+1. APP.JS - COMPONENT CHÍNH
+============================
+
+CHỨC NĂNG:
+- Entry point của toàn bộ ứng dụng
+- Quản lý authentication state (đã login hay chưa)
+- Điều hướng giữa các màn hình chính
+- Wrap app trong ThemeProvider để hỗ trợ dark/light mode
+
+CÁCH HOẠT ĐỘNG:
+- Khởi tạo state: user (null), currentView ('login'/'register')
+- Nếu chưa login: hiển thị LoginForm hoặc RegisterForm
+- Nếu đã login: hiển thị WorkManagement component
+- Xử lý callbacks: handleLogin, handleRegister, handleLogout
+
+PROPS TRUYỀN XUỐNG:
+- Cho LoginForm: onLogin, onSwitchToRegister
+- Cho RegisterForm: onLogin, onSwitchToLogin  
+- Cho WorkManagement: user, onLogout
+
+2. LOGINFORM.JSX - FORM ĐĂNG NHẬP
+==================================
+
+CHỨC NĂNG:
+- Hiển thị form đăng nhập với email/password
+- Hỗ trợ show/hide password
+- Demo login với mock data
+- Tích hợp social login UI (Google, Github - chỉ UI)
+
+CÁCH HOẠT ĐỘNG:
+- State: credentials {email, password}, isLoading, showPassword
+- Validation: kiểm tra email và password không rỗng
+- Mock authentication: chấp nhận bất kỳ email/password nào
+- Demo login: tự động điền demo@example.com / demo123
+
+FEATURES:
+- Loading state khi submit
+- Password visibility toggle
+- Social login buttons (UI only)
+- Remember me checkbox
+- Responsive design với TailwindCSS
+
+3. REGISTERFORM.JSX - FORM ĐĂNG KÝ
+===================================
+
+CHỨC NĂNG:
+- Form đăng ký với firstName, lastName, email, password
+- Validation cơ bản
+- Tự động login sau khi đăng ký thành công
+
+CÁCH HOẠT ĐỘNG:
+- State: formData {firstName, lastName, email, password}, isLoading
+- Validation: kiểm tra tất cả fields không rỗng
+- Mock registration: tự động thành công nếu đủ thông tin
+- Auto-login: gọi onLogin với MOCK_USER sau khi register
+
+FEATURES:
+- Grid layout cho first/last name
+- Social registration buttons (UI only)  
+- Loading state
+- Switch về login form
+
+4. WORKMANAGEMENT.JSX - COMPONENT CHÍNH ỨNG DỤNG
+=================================================
+
+CHỨC NĂNG:
+- Component trung tâm quản lý toàn bộ workspace/board/group/task
+- Hiển thị dashboard với sidebar và main content
+- Quản lý state cho toàn bộ dữ liệu ứng dụng
+
+CÁCH HOẠT ĐỘNG:
+- State chính: data (INITIAL_DATA), currentWorkspaceId, currentBoardId
+- State UI: searchFilter, allGroupsExpanded, showUserProfile, sidebarCollapsed
+- Cung cấp CRUD operations cho groups và tasks
+- Xử lý search filtering và expand/collapse groups
+
+KEY FEATURES:
+- Workspace/Board switching
+- Add new groups/boards
+- Search functionality
+- User profile management
+- Theme toggle
+- Back to top button
+- Responsive sidebar
+
+MAIN FUNCTIONS:
+- handleAddGroup: thêm group mới với unique name
+- handleUpdateGroup: cập nhật group data
+- handleDeleteGroup: xóa group (có confirmation)
+- handleAddTask: thêm task vào group
+- handleUpdateTask: cập nhật task data
+- handleDeleteTask: xóa task
+- handleSearchResult: navigate đến search result
+
+5. TASKGROUP.JSX - QUẢN LÝ NHÓM TASK
+====================================
+
+CHỨC NĂNG:
+- Hiển thị một nhóm tasks với expand/collapse
+- Inline editing cho tên group
+- Thêm task mới vào group
+- Quản lý danh sách tasks trong group
+
+CÁCH HOẠT ĐỘNG:
+- State: localExpanded, isEditingName, editedName, showAddTask, newTask
+- Sync với parent state cho expand/collapse all
+- Unique name generation với auto-suffix (2), (3)...
+- Timeline formatting từ start/end dates
+
+FEATURES:
+- Expand/collapse toggle với chevron icon
+- Color-coded border theo group.color
+- Task count display
+- Add task form với all fields
+- Inline group name editing
+- Delete group với confirmation
+
+TASK FIELDS:
+- name, status, dueDate, timeline (start-end), notes, priority
+
+6. TASKROW.JSX - HÀNG TASK ĐƠN LẺ
+=================================
+
+CHỨC NĂNG:
+- Hiển thị một task đơn lẻ với tất cả thông tin
+- Inline editing cho task details
+- Status dropdown với live preview
+- Timeline date picker
+
+CÁCH HOẠT ĐỘNG:
+- State: isEditing, editedTask, showStatusDropdown, dropdownPosition
+- Timeline parsing: chuyển đổi giữa text format và date inputs
+- Unique name validation khi edit
+- Status dropdown với portal rendering
+
+FEATURES:
+- Inline editing mode với Save/Cancel
+- Status dropdown với color indicators
+- Due date và timeline date pickers
+- Notes textarea
+- Priority indicators
+- Delete task với confirmation
+- Search result highlighting
+
+COMPLEX LOGIC:
+- Timeline text parsing (Jul 21 - 22 → dates)
+- Status dropdown positioning với z-index cao
+- Unique name generation với suffix auto-increment
+
+7. USERPROFILE.JSX - TRANG THÔNG TIN USER
+=========================================
+
+CHỨC NĂNG:
+- Hiển thị và chỉnh sửa thông tin user
+- Đổi mật khẩu (mock)
+- Avatar management
+- User settings
+
+CÁCH HOẠT ĐỘNG:
+- State: isEditing, editedUser, showChangePassword, passwordData
+- Form validation cho required fields
+- Avatar generation từ initials
+- Mock password change với validation
+
+FEATURES:
+- Profile information editing
+- Change password form
+- Avatar display và generation
+- Back navigation
+- Theme toggle integration
+- Responsive layout
+
+SECTIONS:
+- Personal Info: name, email, phone, location
+- Work Info: department, position, join date
+- Bio section
+- Security: change password
+
+8. USERDROPDOWN.JSX - DROPDOWN MENU USER
+========================================
+
+CHỨC NĂNG:
+- Dropdown menu từ user avatar
+- Navigation đến user profile
+- Logout functionality
+- User greeting display
+
+CÁCH HOẠT ĐỘNG:
+- State: showUserDropdown, dropdownPosition
+- Portal rendering để tránh z-index issues
+- Click outside để đóng dropdown
+- Dynamic positioning based on avatar location
+
+FEATURES:
+- User avatar với initials
+- Hover effects
+- User info display trong dropdown
+- Navigation buttons
+- Portal rendering với fixed positioning
+
+9. SEARCHBAR.JSX - THANH TÌM KIẾM TOÀN CỤC
+==========================================
+
+CHỨC NĂNG:
+- Tìm kiếm toàn bộ workspaces, boards, groups, tasks
+- Real-time search với debouncing
+- Keyboard navigation trong results
+- Click to navigate đến result
+
+CÁCH HOẠT ĐỘNG:
+- State: query, results, isOpen, selectedIndex
+- Debounced search (300ms delay)
+- Search across all data hierarchy
+- Sort results theo relevance (exact matches trước)
+
+SEARCH LOGIC:
+- Search trong board names, group names, task names, task notes
+- Results được categorize: board, group, task
+- Limit 10 results để performance
+- Highlight exact matches
+
+KEYBOARD SUPPORT:
+- Arrow Up/Down: navigate results
+- Enter: select result
+- Escape: close dropdown
+
+10. THEMETOGGLE.JSX - CHUYỂN ĐỔI THEME
+======================================
+
+CHỨC NĂNG:
+- Toggle button cho dark/light mode
+- Animated icon transition
+- Integration với ThemeContext
+
+CÁCH HOẠT ĐỘNG:
+- Sử dụng useTheme hook từ context
+- Animated Sun/Moon icons với rotation
+- Smooth transition effects
+
+FEATURES:
+- Smooth icon transitions
+- Tooltip text
+- Responsive hover effects
+- Perfect integration với dark mode
+
+DATA STRUCTURES VÀ CONSTANTS
+=============================
+
+11. CONSTANTS.JS - DỮ LIỆU VÀ HẰNG SỐ
+======================================
+
+MOCK_USER:
+- id, name, email, avatar (initials)
+
+INITIAL_DATA:
+- Hierarchical structure: workspaces > boards > groups > tasks
+- Sample data với realistic task information
+
+STATUS_OPTIONS:
+- Todo (gray), Working on it (orange), Done (green), Expired (red)
+- Mỗi status có color và label
+
+PRIORITY_OPTIONS:
+- Low (blue), Normal (yellow), High (red)
+
+12. HELPERS.JS - UTILITY FUNCTIONS
+==================================
+
+formatDate(): chuyển đổi date string thành format đẹp
+getStatusColor(): lấy color class từ status
+getBorderColor(): lấy border color cho groups
+getTextColor(): lấy text color cho groups
+
+TÍNH NĂNG NÂNG CAO
+==================
+
+1. UNIQUE NAME GENERATION:
+- Tự động thêm suffix (2), (3)... khi trùng tên
+- Áp dụng cho groups, boards, tasks
+
+2. TIMELINE MANAGEMENT:
+- Parse timeline text thành start/end dates
+- Format dates thành timeline text
+- Date picker integration
+
+3. SEARCH FUNCTIONALITY:
+- Debounced search để performance
+- Multi-level search (workspace/board/group/task)
+- Keyboard navigation
+- Result categorization
+
+4. STATE MANAGEMENT:
+- Immutable updates với spread operator
+- Hierarchical state structure
+- Local state cho UI interactions
+- Global state cho data
+
+5. RESPONSIVE DESIGN:
+- Mobile-first approach
+- Tailwind CSS classes
+- Dark mode support
+- Collapsible sidebar
+
+6. UX ENHANCEMENTS:
+- Loading states
+- Confirmation dialogs
+- Error handling
+- Smooth animations
+- Portal rendering cho dropdowns
+
+CÁCH CÁC COMPONENT TƯƠNG TÁC
+============================
+
+1. App.js ← → LoginForm/RegisterForm/WorkManagement
+2. WorkManagement ← → TaskGroup ← → TaskRow
+3. WorkManagement ← → UserDropdown ← → UserProfile
+4. WorkManagement ← → SearchBar
+5. All components ← → ThemeToggle (via Context)
+
+DATA FLOW:
+- Top-down: WorkManagement truyền data xuống TaskGroup → TaskRow
+- Bottom-up: TaskRow gửi callbacks lên TaskGroup → WorkManagement
+- Context: Theme state được share qua Context API
+
+PERFORMANCE OPTIMIZATIONS
+==========================
+
+1. Debounced search (300ms)
+2. Limited search results (10 items)
+3. Local state cho UI interactions
+4. Immutable state updates
+5. Event delegation
+6. Portal rendering cho dropdowns
+
+SECURITY & VALIDATION
+======================
+
+1. Input validation cho forms
+2. Required field checking
+3. Password strength validation (mock)
+4. XSS prevention với proper escaping
+5. Unique name validation
+
+KẾT LUẬN
+========
+
+Work Management Application demonstrate một architecture tốt cho React applications:
+- Clean component separation
+- Proper state management
+- Good UX với loading states và animations
+- Responsive design
+- Accessibility considerations
+- Modern React patterns (hooks, context, portals)
+
+Đây là foundation tốt để expand thành full-featured application với backend integration. 
