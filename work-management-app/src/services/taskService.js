@@ -5,8 +5,8 @@ export const taskService = {
   getTasksByGroupId: (groupId) => api.get(`/tasks/group/${groupId}`),
   getTasksByBoard: (boardId) => api.get(`/tasks/board/${boardId}`),
   getTaskById: (id) => api.get(`/tasks/${id}`),
-  createTask: (data) => api.post('/tasks', data),
-  updateTask: (id, data) => api.put(`/tasks/${id}`, data),
-  assignTask: (taskId, userId) => api.put(`/tasks/${taskId}/assign/${userId}`),
-  deleteTask: (id) => api.delete(`/tasks/${id}`),
+  createTask: (data, currentUserId) => api.post(`/tasks?currentUserId=${currentUserId}`, data),
+  updateTask: (id, data, currentUserId) => api.put(`/tasks/${id}?currentUserId=${currentUserId}`, data),
+  assignTask: (taskId, userId, currentUserId) => api.put(`/tasks/${taskId}/assign/${userId}?currentUserId=${currentUserId}`),
+  deleteTask: (id, currentUserId) => api.delete(`/tasks/${id}?currentUserId=${currentUserId}`),
 };

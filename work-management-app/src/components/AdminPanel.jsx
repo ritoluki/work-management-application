@@ -6,7 +6,7 @@ import { boardService } from '../services/boardService';
 import { taskService } from '../services/taskService';
 import TaskStatistics from './TaskStatistics';
 
-const AdminPanel = ({ onClose }) => {
+const AdminPanel = ({ onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
@@ -122,7 +122,7 @@ const AdminPanel = ({ onClose }) => {
 
   const handleTaskAssign = async (taskId, userId) => {
     try {
-      await taskService.assignTask(taskId, userId);
+      await taskService.assignTask(taskId, userId, currentUser.id);
       await loadTasks(selectedBoard.id); // Reload tasks
       setShowTaskAssignModal(false);
     } catch (error) {

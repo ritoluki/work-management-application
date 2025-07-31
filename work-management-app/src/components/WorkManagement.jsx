@@ -661,7 +661,7 @@ const WorkManagement = ({ user, onLogout }) => {
         ...task,
         groupId: groupId,
         createdById: currentUser.id
-      });
+      }, currentUser.id);
       
       setData(prevData => ({
         ...prevData,
@@ -694,7 +694,7 @@ const WorkManagement = ({ user, onLogout }) => {
   const handleUpdateTask = async (groupId, updatedTask) => {
     try {
       console.log('Updating task with data:', updatedTask);
-      const response = await taskService.updateTask(updatedTask.id, updatedTask);
+      const response = await taskService.updateTask(updatedTask.id, updatedTask, currentUser.id);
       console.log('Update response:', response.data);
       
       setData(prevData => ({
@@ -734,7 +734,7 @@ const WorkManagement = ({ user, onLogout }) => {
   const handleDeleteTask = async (groupId, taskId) => {
     if (window.confirm('Bạn có chắc muốn xóa task này ?')) {
       try {
-        await taskService.deleteTask(taskId);
+        await taskService.deleteTask(taskId, currentUser.id);
         
         setData(prevData => ({
           ...prevData,
@@ -1392,7 +1392,7 @@ const WorkManagement = ({ user, onLogout }) => {
 
       {/* Admin Panel Modal */}
       {showAdminPanel && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+        <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={currentUser} />
       )}
       </div>
     </NotificationProvider>
