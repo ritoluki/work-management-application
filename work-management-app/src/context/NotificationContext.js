@@ -42,10 +42,11 @@ export const NotificationProvider = ({ children, user }) => {
           console.log('Connected to WebSocket: ' + frame);
           setIsConnected(true);
           
-          // Subscribe to user-specific notification queue
-          client.subscribe(`/user/${user.id}/queue/notifications`, function (message) {
+          // Subscribe to user-specific notification topic
+          client.subscribe(`/topic/notifications/${user.id}`, function (message) {
             try {
               const notification = JSON.parse(message.body);
+              console.log('Received notification via WebSocket:', notification);
               addNotification(notification);
             } catch (error) {
               console.error('Error parsing notification:', error);
@@ -53,10 +54,12 @@ export const NotificationProvider = ({ children, user }) => {
           });
 
           // Subscribe to unread count updates
-          client.subscribe(`/user/${user.id}/queue/unread-count`, function (message) {
+          client.subscribe(`/topic/unread-count/${user.id}`, function (message) {
             try {
-              const count = parseInt(message.body);
+              const data = JSON.parse(message.body);
+              const count = data.count || data; // Handle both {count: X} and direct number
               setUnreadCount(count);
+              console.log('Received unread count update:', count);
             } catch (error) {
               console.error('Error parsing unread count:', error);
             }

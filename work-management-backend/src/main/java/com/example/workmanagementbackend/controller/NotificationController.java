@@ -15,7 +15,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class NotificationController {
     
     private final NotificationService notificationService;
@@ -83,15 +82,6 @@ public class NotificationController {
     }
     
     /**
-     * Send test notification (for development only)
-     */
-    @PostMapping("/test")
-    public ResponseEntity<NotificationDTO> sendTestNotification(@RequestBody NotificationDTO notificationDTO) {
-        NotificationDTO result = notificationService.sendNotification(notificationDTO);
-        return ResponseEntity.ok(result);
-    }
-    
-    /**
      * Send task assignment notification
      */
     @PostMapping("/task-assigned")
@@ -117,5 +107,105 @@ public class NotificationController {
         
         NotificationDTO result = notificationService.sendCommentAddedNotification(userId, taskName, commenterName, taskId);
         return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * Test endpoint to check if controller is working
+     */
+    @GetMapping("/test")
+    public ResponseEntity<Map<String, String>> testEndpoint() {
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "message", "Notification controller is working!",
+            "timestamp", java.time.LocalDateTime.now().toString()
+        ));
+    }
+    
+    /**
+     * Test database connection and table existence
+     */
+    @GetMapping("/test-db")
+    public ResponseEntity<Map<String, Object>> testDatabase() {
+        try {
+            // Try to count notifications (this will fail if table doesn't exist)
+            Long count = notificationService.getTotalNotificationCount();
+            return ResponseEntity.ok(Map.of(
+                "status", "success", 
+                "message", "Database connection working!",
+                "totalNotifications", count,
+                "timestamp", java.time.LocalDateTime.now().toString()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of(
+                "status", "error",
+                "message", "Database error: " + e.getMessage(),
+                "error", e.getClass().getSimpleName(),
+                "timestamp", java.time.LocalDateTime.now().toString()
+            ));
+        }
+    }
+    
+    /**
+     * Debug endpoint to test unread notifications with detailed error info
+     */
+    @GetMapping("/debug/user/{userId}/unread")
+    public ResponseEntity<Map<String, Object>> debugUnreadNotifications(@PathVariable Long userId) {
+        try {
+            List<NotificationDTO> notifications = notificationService.getUnreadNotifications(userId);
+            Long count = notificationService.getUnreadCount(userId);
+            
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "userId", userId,
+                "unreadCount", count,
+                "notifications", notifications,
+                "timestamp", java.time.LocalDateTime.now().toString()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of(
+                "status", "error",
+                "userId", userId,
+                "message", "Error getting unread notifications: " + e.getMessage(),
+                "error", e.getClass().getSimpleName(),
+                "stackTrace", java.util.Arrays.toString(e.getStackTrace()),
+                "timestamp", java.time.LocalDateTime.now().toString()
+            ));
+        }
+    }
+    
+    /**
+     * Create test notification with real-time WebSocket broadcast
+     */
+    @PostMapping("/test")
+    public ResponseEntity<NotificationDTO> createTestNotification(@RequestBody Map<String, Object> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId").toString());
+            String typeString = request.get("type").toString();
+            String title = request.get("title").toString();
+            String message = request.get("message").toString();
+            
+            // Convert string to enum
+            com.example.workmanagementbackend.entity.Notification.NotificationType type = 
+                com.example.workmanagementbackend.entity.Notification.NotificationType.valueOf(typeString);
+            
+            NotificationDTO notificationDTO = NotificationDTO.builder()
+                .userId(userId)
+                .type(type)
+                .title(title)
+                .message(message)
+                .isRead(false)
+                .build();
+            
+            // This will save to DB AND send WebSocket message
+            NotificationDTO result = notificationService.sendNotification(notificationDTO);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                NotificationDTO.builder()
+                    .message("Error creating test notification: " + e.getMessage())
+                    .build()
+            );
+        }
     }
 }

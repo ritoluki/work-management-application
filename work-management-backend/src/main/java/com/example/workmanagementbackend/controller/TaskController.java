@@ -1,6 +1,9 @@
 package com.example.workmanagementbackend.controller;
 
+import com.example.workmanagementbackend.dto.NotificationDTO;
 import com.example.workmanagementbackend.dto.TaskDTO;
+import com.example.workmanagementbackend.entity.Notification;
+import com.example.workmanagementbackend.service.NotificationService;
 import com.example.workmanagementbackend.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +17,9 @@ public class TaskController {
 
     @Autowired
     private TaskService taskService;
+    
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
@@ -62,7 +68,28 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO) {
         try {
-            return ResponseEntity.ok(taskService.createTask(taskDTO));
+            System.out.println("Creating new task: " + taskDTO.getName());
+            TaskDTO createdTask = taskService.createTask(taskDTO);
+            
+            // Send notification if task is assigned to someone
+            if (createdTask.getAssignedToId() != null) {
+                System.out.println("Sending task creation notification to user " + createdTask.getAssignedToId());
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(createdTask.getAssignedToId());
+                notification.setType(Notification.NotificationType.TASK_ASSIGNED);
+                notification.setTitle("Task mới được giao");
+                notification.setMessage("Bạn đã được giao task mới \"" + createdTask.getName() + "\"");
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(createdTask.getId());
+                notification.setCreatedById(createdTask.getCreatedById()); // Task creator
+                
+                notificationService.sendNotification(notification);
+                System.out.println("Task creation notification sent successfully!");
+            } else {
+                System.out.println("No user assigned to new task - skipping notification");
+            }
+            
+            return ResponseEntity.ok(createdTask);
         } catch (Exception e) {
             System.err.println("Error creating task: " + e.getMessage());
             e.printStackTrace();
@@ -75,7 +102,56 @@ public class TaskController {
         try {
             System.out.println("Updating task with ID: " + id);
             System.out.println("TaskDTO: " + taskDTO);
-            return ResponseEntity.ok(taskService.updateTask(id, taskDTO));
+            
+            // Get old task to check status changes
+            TaskDTO oldTask = taskService.getTaskById(id);
+            
+            // Update task
+            TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
+            System.out.println("Updated task assigned to ID: " + updatedTask.getAssignedToId());
+            
+            // Check if task status changed to DONE
+            boolean taskCompleted = !"DONE".equals(oldTask.getStatus()) && "DONE".equals(updatedTask.getStatus());
+            
+            // Send notification if task has assigned user OR creator
+            Long notificationUserId = null;
+            if (updatedTask.getAssignedToId() != null) {
+                notificationUserId = updatedTask.getAssignedToId();
+                System.out.println("Sending notification to assigned user: " + notificationUserId);
+            } else if (updatedTask.getCreatedById() != null) {
+                notificationUserId = updatedTask.getCreatedById();
+                System.out.println("Sending notification to task creator: " + notificationUserId);
+            }
+            
+            if (notificationUserId != null) {
+                System.out.println("Sending notification for task update...");
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(notificationUserId);
+                
+                // Different notification for task completion
+                if (taskCompleted) {
+                    notification.setType(Notification.NotificationType.TASK_COMPLETED);
+                    notification.setTitle("Task hoàn thành");
+                    notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được hoàn thành! 🎉");
+                    System.out.println("Sending TASK_COMPLETED notification");
+                } else {
+                    notification.setType(Notification.NotificationType.TASK_UPDATED);
+                    notification.setTitle("Task được cập nhật");
+                    notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được cập nhật");
+                    System.out.println("Sending TASK_UPDATED notification");
+                }
+                
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(updatedTask.getId());
+                notification.setCreatedById(1L); // Assuming current user ID is 1
+                
+                notificationService.sendNotification(notification);
+                System.out.println("Notification sent successfully!");
+            } else {
+                System.out.println("No assigned user or creator - skipping notification");
+            }
+            
+            return ResponseEntity.ok(updatedTask);
         } catch (Exception e) {
             System.err.println("Error updating task: " + e.getMessage());
             e.printStackTrace();
@@ -86,7 +162,24 @@ public class TaskController {
     @PutMapping("/{taskId}/assign/{userId}")
     public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId) {
         try {
-            return ResponseEntity.ok(taskService.assignTask(taskId, userId));
+            System.out.println("Assigning task " + taskId + " to user " + userId);
+            TaskDTO assignedTask = taskService.assignTask(taskId, userId);
+            
+            // Send notification to assigned user
+            System.out.println("Sending assignment notification to user " + userId);
+            NotificationDTO notification = new NotificationDTO();
+            notification.setUserId(userId);
+            notification.setType(Notification.NotificationType.TASK_ASSIGNED);
+            notification.setTitle("Task được giao");
+            notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
+            notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+            notification.setRelatedEntityId(assignedTask.getId());
+            notification.setCreatedById(1L); // Current user assigning the task
+            
+            notificationService.sendNotification(notification);
+            System.out.println("Assignment notification sent successfully!");
+            
+            return ResponseEntity.ok(assignedTask);
         } catch (Exception e) {
             System.err.println("Error assigning task: " + e.getMessage());
             e.printStackTrace();
