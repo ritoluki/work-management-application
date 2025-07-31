@@ -8,6 +8,25 @@ const TaskStatistics = () => {
   const [totalTasks, setTotalTasks] = useState(0);
   const [chartType, setChartType] = useState('pie'); // 'pie' or 'bar'
   const [loading, setLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Màu sắc cho các status
   const statusColors = {
@@ -175,6 +194,7 @@ const TaskStatistics = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"
+                    nameKey="label"
                   >
                     {taskStats.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -185,26 +205,38 @@ const TaskStatistics = () => {
                       `${value} tasks (${props.payload.percentage}%)`,
                       props.payload.label
                     ]}
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                      border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      color: isDarkMode ? '#f3f4f6' : '#374151',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
                   />
                   <Legend
-                    formatter={(value, entry) => (
-                      <span style={{ color: entry.color }}>
-                        {taskStats.find(item => item.status === value)?.label || value}
-                      </span>
-                    )}
+                    formatter={(value) => {
+                      const item = taskStats.find(stat => stat.label === value || stat.status === value);
+                      return item?.label || value;
+                    }}
                   />
                 </PieChart>
               ) : (
                 <BarChart data={taskStats}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke={isDarkMode ? '#4b5563' : '#e5e7eb'}
+                    className="opacity-30" 
+                  />
                   <XAxis 
                     dataKey="label" 
                     fontSize={12}
-                    className="fill-gray-600 dark:fill-gray-400"
+                    tick={{ fill: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                    axisLine={{ stroke: isDarkMode ? '#4b5563' : '#e5e7eb' }}
                   />
                   <YAxis 
                     fontSize={12}
-                    className="fill-gray-600 dark:fill-gray-400"
+                    tick={{ fill: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                    axisLine={{ stroke: isDarkMode ? '#4b5563' : '#e5e7eb' }}
                   />
                   <Tooltip
                     formatter={(value, name, props) => [
@@ -213,10 +245,11 @@ const TaskStatistics = () => {
                     ]}
                     labelFormatter={(label) => `Status: ${label}`}
                     contentStyle={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      border: 'none',
+                      backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                      border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`,
                       borderRadius: '8px',
-                      color: 'white'
+                      color: isDarkMode ? '#f3f4f6' : '#374151',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
