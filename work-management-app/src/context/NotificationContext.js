@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const NotificationContext = createContext();
 
@@ -13,106 +15,140 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children, user }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const socketRef = useRef(null);
+  const stompClient = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Initialize WebSocket connection
+  // Initialize STOMP WebSocket connection
   useEffect(() => {
     if (!user?.id) return;
 
-    const connectWebSocket = () => {
+    const connect = () => {
       try {
-        // WebSocket connection
-        socketRef.current = new WebSocket(`ws://localhost:8080/notifications?userId=${user.id}`);
-        
-        socketRef.current.onopen = () => {
-          console.log('WebSocket connected for notifications');
+        // Create STOMP client with SockJS
+        const client = new Client({
+          webSocketFactory: () => new SockJS('http://localhost:8080/notifications'),
+          connectHeaders: {
+            userId: user.id.toString()
+          },
+          debug: function (str) {
+            console.log('STOMP: ' + str);
+          },
+          reconnectDelay: 5000,
+          heartbeatIncoming: 4000,
+          heartbeatOutgoing: 4000,
+        });
+
+        client.onConnect = function (frame) {
+          console.log('Connected to WebSocket: ' + frame);
+          setIsConnected(true);
+          
+          // Subscribe to user-specific notification queue
+          client.subscribe(`/user/${user.id}/queue/notifications`, function (message) {
+            try {
+              const notification = JSON.parse(message.body);
+              addNotification(notification);
+            } catch (error) {
+              console.error('Error parsing notification:', error);
+            }
+          });
+
+          // Subscribe to unread count updates
+          client.subscribe(`/user/${user.id}/queue/unread-count`, function (message) {
+            try {
+              const count = parseInt(message.body);
+              setUnreadCount(count);
+            } catch (error) {
+              console.error('Error parsing unread count:', error);
+            }
+          });
         };
 
-        socketRef.current.onmessage = (event) => {
-          try {
-            const notification = JSON.parse(event.data);
-            addNotification(notification);
-          } catch (error) {
-            console.error('Error parsing notification:', error);
-          }
+        client.onStompError = function (frame) {
+          console.error('Broker reported error: ' + frame.headers['message']);
+          console.error('Additional details: ' + frame.body);
+          setIsConnected(false);
         };
 
-        socketRef.current.onclose = () => {
-          console.log('WebSocket disconnected, attempting to reconnect...');
-          // Reconnect after 5 seconds
-          setTimeout(connectWebSocket, 5000);
+        client.onWebSocketClose = function (event) {
+          console.log('WebSocket connection closed');
+          setIsConnected(false);
         };
 
-        socketRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
-        };
+        client.activate();
+        stompClient.current = client;
+
       } catch (error) {
         console.error('Failed to connect WebSocket:', error);
-        // Fallback - try to reconnect after 5 seconds
-        setTimeout(connectWebSocket, 5000);
+        setTimeout(connect, 5000);
       }
     };
 
-    connectWebSocket();
+    connect();
 
     // Cleanup on unmount
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
+      if (stompClient.current) {
+        stompClient.current.deactivate();
       }
     };
   }, [user?.id]);
 
   // Load existing notifications on mount
   useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        // Load notifications from backend API
+        const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread`);
+        if (response.ok) {
+          const notificationData = await response.json();
+          setNotifications(notificationData);
+          setUnreadCount(notificationData.filter(n => !n.isRead).length);
+        }
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        // Fallback to mock data for development
+        const mockNotifications = [
+          {
+            id: 1,
+            type: 'TASK_ASSIGNED',
+            title: 'Task được giao',
+            message: 'John đã giao cho bạn task "Fix login bug"',
+            isRead: false,
+            createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+            relatedEntityType: 'TASK',
+            relatedEntityId: 123
+          },
+          {
+            id: 2,
+            type: 'COMMENT_ADDED',
+            title: 'Bình luận mới',
+            message: 'Sarah đã bình luận: "Tuyệt vời! Hãy xem này"',
+            isRead: false,
+            createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+            relatedEntityType: 'TASK',
+            relatedEntityId: 124
+          },
+          {
+            id: 3,
+            type: 'DEADLINE_WARNING',
+            title: 'Cảnh báo deadline',
+            message: 'Task "Deploy production" sẽ đến hạn trong 2 giờ nữa',
+            isRead: true,
+            createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+            relatedEntityType: 'TASK',
+            relatedEntityId: 125
+          }
+        ];
+
+        setNotifications(mockNotifications);
+        setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
+      }
+    };
+
     if (user?.id) {
       loadNotifications();
     }
-  }, [user?.id]); // loadNotifications is defined inside useEffect, so no dependency needed
-
-  const loadNotifications = async () => {
-    try {
-      // For now, we'll use mock data
-      // Later this will be replaced with actual API call
-      const mockNotifications = [
-        {
-          id: 1,
-          type: 'TASK_ASSIGNED',
-          title: 'New task assigned',
-          message: 'John assigned you to "Fix login bug"',
-          isRead: false,
-          createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-          relatedEntityType: 'TASK',
-          relatedEntityId: 123
-        },
-        {
-          id: 2,
-          type: 'COMMENT_ADDED',
-          title: 'New comment',
-          message: 'Sarah commented on "Homepage redesign": "Looks great!"',
-          isRead: false,
-          createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-          relatedEntityType: 'TASK',
-          relatedEntityId: 124
-        },
-        {
-          id: 3,
-          type: 'DEADLINE_WARNING',
-          title: 'Deadline approaching',
-          message: 'Task "Deploy to production" is due in 2 hours',
-          isRead: true,
-          createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-          relatedEntityType: 'TASK',
-          relatedEntityId: 125
-        }
-      ];
-
-      setNotifications(mockNotifications);
-      setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
+  }, [user?.id]);
 
   const addNotification = (notification) => {
     const newNotification = {
@@ -132,28 +168,74 @@ export const NotificationProvider = ({ children, user }) => {
     playNotificationSound();
   };
 
-  const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-    
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/notifications/${notificationId}/read?userId=${user.id}`, {
+        method: 'PUT'
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === notificationId 
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      // Fallback to local update
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
-    setUnreadCount(0);
+  const markAllAsRead = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/mark-all-read`, {
+        method: 'PUT'
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => 
+          prev.map(notification => ({ ...notification, isRead: true }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      // Fallback to local update
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, isRead: true }))
+      );
+      setUnreadCount(0);
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
-    setUnreadCount(0);
+  const clearAll = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+      // Fallback to local update
+      setNotifications([]);
+      setUnreadCount(0);
+    }
   };
 
   const showBrowserNotification = (notification) => {

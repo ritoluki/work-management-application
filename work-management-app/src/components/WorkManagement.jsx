@@ -1397,7 +1397,7 @@ const WorkManagement = ({ user, onLogout }) => {
       )}
 
       {/* Test Button - Only in development */}
-      {process.env.NODE_ENV === 'development' && <NotificationTestButton />}
+      {process.env.NODE_ENV === 'development' && <NotificationTestButton currentUser={currentUser} />}
       </div>
     </NotificationProvider>
   );
