@@ -104,8 +104,22 @@ export const NotificationProvider = ({ children, user }) => {
         const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread`);
         if (response.ok) {
           const notificationData = await response.json();
-          setNotifications(notificationData);
-          setUnreadCount(notificationData.filter(n => !n.isRead).length);
+          // Parse metadata to add taskDetails
+          const enhancedNotifications = notificationData.map(notification => {
+            if (notification.metadata) {
+              try {
+                const taskDetails = JSON.parse(notification.metadata);
+                return { ...notification, taskDetails };
+              } catch (e) {
+                console.error('Error parsing notification metadata:', e);
+                return notification;
+              }
+            }
+            return notification;
+          });
+          
+          setNotifications(enhancedNotifications);
+          setUnreadCount(enhancedNotifications.filter(n => !n.isRead).length);
         }
       } catch (error) {
         console.error('Failed to load notifications:', error);
@@ -115,21 +129,37 @@ export const NotificationProvider = ({ children, user }) => {
             id: 1,
             type: 'TASK_ASSIGNED',
             title: 'Task được giao',
-            message: 'John đã giao cho bạn task "Fix login bug"',
+            message: 'Bạn vừa được Admin giao task "Fix login bug"',
             isRead: false,
             createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
             relatedEntityType: 'TASK',
-            relatedEntityId: 123
+            relatedEntityId: 123,
+            taskDetails: {
+              taskName: 'Fix login bug',
+              dueDate: '2025-02-05',
+              workspaceName: 'VIP 1',
+              boardName: 'Board 1',
+              groupName: 'Group 1',
+              assignedBy: 'Admin'
+            }
           },
           {
             id: 2,
-            type: 'COMMENT_ADDED',
-            title: 'Bình luận mới',
-            message: 'Sarah đã bình luận: "Tuyệt vời! Hãy xem này"',
+            type: 'TASK_UPDATED',
+            title: 'Task được cập nhật',
+            message: 'Task "Update UI components" đã được Manager cập nhật',
             isRead: false,
             createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
             relatedEntityType: 'TASK',
-            relatedEntityId: 124
+            relatedEntityId: 124,
+            taskDetails: {
+              taskName: 'Update UI components',
+              dueDate: '2025-02-10',
+              workspaceName: 'VIP 1',
+              boardName: 'Board 1',
+              groupName: 'Group 1',
+              updatedBy: 'Manager'
+            }
           },
           {
             id: 3,
@@ -139,7 +169,14 @@ export const NotificationProvider = ({ children, user }) => {
             isRead: true,
             createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
             relatedEntityType: 'TASK',
-            relatedEntityId: 125
+            relatedEntityId: 125,
+            taskDetails: {
+              taskName: 'Deploy production',
+              dueDate: '2025-01-31',
+              workspaceName: 'VIP 1',
+              boardName: 'Board 1',
+              groupName: 'Group 1'
+            }
           }
         ];
 
@@ -160,6 +197,16 @@ export const NotificationProvider = ({ children, user }) => {
       createdAt: new Date(),
       isRead: false
     };
+
+    // Parse metadata if exists
+    if (notification.metadata) {
+      try {
+        const taskDetails = JSON.parse(notification.metadata);
+        newNotification.taskDetails = taskDetails;
+      } catch (e) {
+        console.error('Error parsing notification metadata:', e);
+      }
+    }
 
     setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
@@ -288,6 +335,38 @@ export const NotificationProvider = ({ children, user }) => {
     return false;
   };
 
+  // Function to navigate to a specific task
+  const navigateToTask = (taskDetails) => {
+    if (!taskDetails) return null;
+    
+    return {
+      workspaceName: taskDetails.workspaceName,
+      boardName: taskDetails.boardName,
+      groupName: taskDetails.groupName,
+      taskId: taskDetails.taskId || taskDetails.relatedEntityId,
+      taskName: taskDetails.taskName
+    };
+  };
+
+  // Function to create detailed notification messages
+  const createDetailedMessage = (type, data) => {
+    const { taskName, workspaceName, boardName, groupName, dueDate, assignedBy, updatedBy } = data;
+    const dueDateFormatted = dueDate ? new Date(dueDate).toLocaleDateString('vi-VN') : '';
+    
+    switch (type) {
+      case 'TASK_ASSIGNED':
+        return `Bạn vừa được ${assignedBy} giao task "${taskName}" (hạn: ${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'TASK_UPDATED':
+        return `Task "${taskName}" đã được ${updatedBy} cập nhật trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'DEADLINE_WARNING':
+        return `Task "${taskName}" sẽ đến hạn (${dueDateFormatted}) trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      case 'TASK_COMPLETED':
+        return `Task "${taskName}" đã được hoàn thành trong workspace "${workspaceName}" > board "${boardName}" > group "${groupName}"`;
+      default:
+        return data.message || '';
+    }
+  };
+
   const value = {
     notifications,
     unreadCount,
@@ -295,7 +374,9 @@ export const NotificationProvider = ({ children, user }) => {
     markAsRead,
     markAllAsRead,
     clearAll,
-    requestNotificationPermission
+    requestNotificationPermission,
+    navigateToTask,
+    createDetailedMessage
   };
 
   return (
