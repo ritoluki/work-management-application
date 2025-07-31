@@ -2,13 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 
-const SearchBar = ({ data, onResult, onQueryChange }) => {
+const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Close search dropdown when admin panel opens
+  useEffect(() => {
+    if (isAdminPanelOpen) {
+      setIsOpen(false);
+      setQuery('');
+      setResults([]);
+    }
+  }, [isAdminPanelOpen]);
 
   // Debounced search function
   useEffect(() => {
@@ -227,7 +236,7 @@ const SearchBar = ({ data, onResult, onQueryChange }) => {
       </div>
 
       {/* Search Results Dropdown */}
-      {isOpen && results.length > 0 && createPortal(
+      {isOpen && results.length > 0 && !isAdminPanelOpen && createPortal(
         <div
           ref={dropdownRef}
           className="search-dropdown-menu"
@@ -236,7 +245,7 @@ const SearchBar = ({ data, onResult, onQueryChange }) => {
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             width: dropdownPosition.width,
-            zIndex: 2147483647,
+            zIndex: 1000,
             background: 'white',
             border: '1px solid #d1d5db',
             borderRadius: '0.5rem',

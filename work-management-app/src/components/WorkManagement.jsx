@@ -859,7 +859,7 @@ const WorkManagement = ({ user, onLogout }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <header className="flex items-center gap-2 px-4 py-2 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 sticky top-0 z-40 transition-colors duration-200">
+      <header className="flex items-center gap-2 px-4 py-2 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 sticky top-0 z-[1100] transition-colors duration-200">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
@@ -880,6 +880,7 @@ const WorkManagement = ({ user, onLogout }) => {
               data={data.workspaces}
               onResult={handleSearchResult}
               onQueryChange={handleSearchQueryChange}
+              isAdminPanelOpen={showAdminPanel}
             />
           </div>
         </div>
