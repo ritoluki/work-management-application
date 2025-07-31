@@ -5,13 +5,13 @@
 /* Custom dropdown z-index */
 .dropdown-container {
   position: relative !important;
-  z-index: 2147483646 !important;
+  z-index: 100 !important;
   transform: translateZ(0) !important;
 }
 
 .dropdown-menu {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: 1000 !important;
   background: white !important;
   border: 1px solid #d1d5db !important;
   border-radius: 0.5rem !important;
@@ -30,7 +30,7 @@
 
 .user-dropdown-menu {
   position: fixed !important;
-  z-index: 2147483650 !important;
+  z-index: 1001 !important;
   background: white !important;
   border: 1px solid #d1d5db !important;
   border-radius: 0.5rem !important;
@@ -49,7 +49,7 @@
 
 .search-dropdown-menu {
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: 1000 !important;
   background: white !important;
   border: 1px solid #d1d5db !important;
   border-radius: 0.5rem !important;

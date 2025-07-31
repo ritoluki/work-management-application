@@ -141,7 +141,7 @@ const UserProfile = ({ user, onClose, onUpdateUser }) => {
   return (
     <div 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" 
-      style={{ zIndex: 2147483649 }} 
+      style={{ zIndex: 1055 }} 
       onClick={onClose}
     >
       <div 
@@ -465,7 +465,7 @@ const UserProfile = ({ user, onClose, onUpdateUser }) => {
       {showChangePassword && (
         <div 
           className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" 
-          style={{ zIndex: 2147483650 }}
+          style={{ zIndex: 1060 }}
           onClick={(e) => {
             e.stopPropagation();
             setShowChangePassword(false);
