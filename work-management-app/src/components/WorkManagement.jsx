@@ -29,13 +29,13 @@ const WorkManagement = ({ user, onLogout }) => {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  
+
   // Workspace states
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
   const [showAddWorkspace, setShowAddWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const workspaceDropdownRef = useRef(null);
-  
+
   // Edit/Delete states
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [editWorkspaceName, setEditWorkspaceName] = useState('');
@@ -54,7 +54,7 @@ const WorkManagement = ({ user, onLogout }) => {
   useEffect(() => {
     const workspace = data.workspaces.find(w => w.id === currentWorkspaceId);
     const board = workspace?.boards.find(b => b.id === currentBoardId);
-    
+
     if (currentBoardId && board && board.groups) {
       // Load tasks for all groups in the current board
       const loadAllTasksForCurrentBoard = async () => {
@@ -71,8 +71,8 @@ const WorkManagement = ({ user, onLogout }) => {
   // đóng ws khi click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showWorkspaceDropdown && workspaceDropdownRef.current && 
-          !workspaceDropdownRef.current.contains(event.target)) {
+      if (showWorkspaceDropdown && workspaceDropdownRef.current &&
+        !workspaceDropdownRef.current.contains(event.target)) {
         setShowWorkspaceDropdown(false);
         setShowAddWorkspace(false);
         // Reset edit states when closing dropdown
@@ -92,7 +92,7 @@ const WorkManagement = ({ user, onLogout }) => {
       setLoading(true);
       setError(null);
       const response = await workspaceService.getAllWorkspaces();
-      
+
       // Transform data để phù hợp với cấu trúc hiện tại
       const transformedData = {
         workspaces: response.data.map(workspace => ({
@@ -100,9 +100,9 @@ const WorkManagement = ({ user, onLogout }) => {
           boards: [] // Sẽ load boards sau
         }))
       };
-      
+
       setData(transformedData);
-      
+
       // Load boards cho workspace đầu tiên
       if (transformedData.workspaces.length > 0) {
         await loadBoardsForWorkspace(transformedData.workspaces[0].id);
@@ -118,16 +118,16 @@ const WorkManagement = ({ user, onLogout }) => {
   const loadBoardsForWorkspace = async (workspaceId) => {
     try {
       const response = await boardService.getBoardsByWorkspaceId(workspaceId);
-      
+
       setData(prevData => ({
         ...prevData,
-        workspaces: prevData.workspaces.map(workspace => 
-          workspace.id === workspaceId 
+        workspaces: prevData.workspaces.map(workspace =>
+          workspace.id === workspaceId
             ? { ...workspace, boards: response.data.map(board => ({ ...board, groups: [] })) }
             : workspace
         )
       }));
-      
+
       // Load groups cho tất cả boards trong workspace này
       if (response.data.length > 0) {
         for (const board of response.data) {
@@ -142,19 +142,19 @@ const WorkManagement = ({ user, onLogout }) => {
   const loadGroupsForBoard = async (boardId) => {
     try {
       const response = await groupService.getGroupsByBoardId(boardId);
-      
+
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace => ({
           ...workspace,
-          boards: workspace.boards.map(board => 
-            board.id === boardId 
+          boards: workspace.boards.map(board =>
+            board.id === boardId
               ? { ...board, groups: response.data.map(group => ({ ...group, tasks: [] })) }
               : board
           )
         }))
       }));
-      
+
       // Load tasks cho tất cả groups trong board này
       if (response.data.length > 0) {
         for (const group of response.data) {
@@ -169,15 +169,15 @@ const WorkManagement = ({ user, onLogout }) => {
   const loadTasksForGroup = async (groupId) => {
     try {
       const response = await taskService.getTasksByGroupId(groupId);
-      
+
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace => ({
           ...workspace,
           boards: workspace.boards.map(board => ({
             ...board,
-            groups: board.groups.map(group => 
-              group.id === groupId 
+            groups: board.groups.map(group =>
+              group.id === groupId
                 ? { ...group, tasks: response.data }
                 : group
             )
@@ -193,20 +193,19 @@ const WorkManagement = ({ user, onLogout }) => {
     const baseName = proposedName.trim();
     const existingNames = data.workspaces.map(workspace => workspace.name);
     const existingNamesLowerCase = existingNames.map(name => name.toLowerCase());
-    
+
     if (!existingNamesLowerCase.includes(baseName.toLowerCase())) {
       return baseName;
     }
-    
-      // Find the highest suffix number for this base name
+
     let counter = 2;
     let uniqueName = `${baseName} (${counter})`;
-    
+
     while (existingNamesLowerCase.includes(uniqueName.toLowerCase())) {
       counter++;
       uniqueName = `${baseName} (${counter})`;
     }
-    
+
     return uniqueName;
   };
 
@@ -216,22 +215,22 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('CREATE_WORKSPACE', currentUser.role));
       return;
     }
-    
+
     if (newWorkspaceName.trim()) {
       try {
         const uniqueName = generateUniqueWorkspaceName(newWorkspaceName);
-        
+
         const response = await workspaceService.createWorkspace({
           name: uniqueName,
           description: '',
           ownerId: currentUser.id
         });
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: [...prevData.workspaces, { ...response.data, boards: [] }]
         }));
-        
+
         setNewWorkspaceName('');
         setShowAddWorkspace(false);
       } catch (err) {
@@ -243,12 +242,12 @@ const WorkManagement = ({ user, onLogout }) => {
 
   const handleSwitchWorkspace = (workspaceId) => {
     setCurrentWorkspaceId(workspaceId);
-    
+
     // chuyển sang board đầu tiên của workspace hoặc null nếu không có board
     const workspace = data.workspaces.find(w => w.id === workspaceId);
     const firstBoard = workspace?.boards?.[0];
     setCurrentBoardId(firstBoard?.id || null);
-    
+
     setShowWorkspaceDropdown(false);
   };
 
@@ -259,34 +258,33 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('DELETE_WORKSPACE', currentUser.role));
       return;
     }
-    
+
     if (data.workspaces.length <= 1) {
       alert('Không thể xóa workspace cuối cùng!');
       return;
     }
-    
+
     const workspace = data.workspaces.find(w => w.id === workspaceId);
-    
+
     const confirmMessage = `Bạn có chắc muốn xóa workspace "${workspace?.name}"?\n\n` +
       `Hành động này không thể hoàn tác!`;
-    
+
     if (window.confirm(confirmMessage)) {
       try {
         await workspaceService.deleteWorkspace(workspaceId);
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.filter(w => w.id !== workspaceId)
         }));
-        
-        // Switch to first remaining workspace
+
         const remainingWorkspaces = data.workspaces.filter(w => w.id !== workspaceId);
         if (remainingWorkspaces.length > 0) {
           const firstWorkspace = remainingWorkspaces[0];
           setCurrentWorkspaceId(firstWorkspace.id);
           setCurrentBoardId(firstWorkspace.boards?.[0]?.id || null);
         }
-        
+
         setShowWorkspaceDropdown(false);
       } catch (err) {
         if (err.response?.data?.message) {
@@ -307,7 +305,7 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('EDIT_WORKSPACE', currentUser.role));
       return;
     }
-    
+
     const workspace = data.workspaces.find(w => w.id === workspaceId);
     setEditingWorkspaceId(workspaceId);
     setEditWorkspaceName(workspace?.name || '');
@@ -318,15 +316,15 @@ const WorkManagement = ({ user, onLogout }) => {
       alert('Tên workspace không được để trống!');
       return;
     }
-    
+
     const uniqueName = generateUniqueWorkspaceName(editWorkspaceName);
-    
+
     try {
       // Gọi API để cập nhật workspace
       await workspaceService.updateWorkspace(editingWorkspaceId, {
         name: uniqueName
       });
-      
+
       // Cập nhật state local
       setData(prevData => ({
         ...prevData,
@@ -336,7 +334,7 @@ const WorkManagement = ({ user, onLogout }) => {
             : workspace
         )
       }));
-      
+
       setEditingWorkspaceId(null);
       setEditWorkspaceName('');
     } catch (err) {
@@ -357,31 +355,31 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('DELETE_BOARD', currentUser.role));
       return;
     }
-    
+
     const board = currentWorkspace?.boards.find(b => b.id === boardId);
-    
+
     const confirmMessage = `Bạn có chắc muốn xóa board "${board?.name}"?\n\n` +
       `Hành động này không thể hoàn tác!`;
-    
+
     if (window.confirm(confirmMessage)) {
       try {
         await boardService.deleteBoard(boardId);
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
             workspace.id === currentWorkspaceId
               ? {
-                  ...workspace,
-                  boards: workspace.boards.filter(board => board.id !== boardId)
-                }
+                ...workspace,
+                boards: workspace.boards.filter(board => board.id !== boardId)
+              }
               : workspace
-        )
-      }));
-      
-      // Switch to first remaining board or null
-      const remainingBoards = currentWorkspace?.boards.filter(b => b.id !== boardId);
-      setCurrentBoardId(remainingBoards?.[0]?.id || null);
+          )
+        }));
+
+        // Switch to first remaining board or null
+        const remainingBoards = currentWorkspace?.boards.filter(b => b.id !== boardId);
+        setCurrentBoardId(remainingBoards?.[0]?.id || null);
       } catch (err) {
         console.error('Delete board error:', err);
         if (err.response?.data?.message) {
@@ -404,7 +402,7 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('EDIT_BOARD', currentUser.role));
       return;
     }
-    
+
     const board = currentWorkspace?.boards.find(b => b.id === boardId);
     setEditingBoardId(boardId);
     setEditBoardName(board?.name || '');
@@ -415,32 +413,32 @@ const WorkManagement = ({ user, onLogout }) => {
       alert('Tên board không được để trống!');
       return;
     }
-    
+
     const uniqueName = generateUniqueBoardName(editBoardName);
-    
+
     try {
       // Gọi API để cập nhật board
       await boardService.updateBoard(editingBoardId, {
         name: uniqueName
       });
-      
+
       // Cập nhật state local
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace =>
           workspace.id === currentWorkspaceId
             ? {
-                ...workspace,
-                boards: workspace.boards.map(board =>
-                  board.id === editingBoardId
-                    ? { ...board, name: uniqueName }
-                    : board
-                )
-              }
+              ...workspace,
+              boards: workspace.boards.map(board =>
+                board.id === editingBoardId
+                  ? { ...board, name: uniqueName }
+                  : board
+              )
+            }
             : workspace
         )
       }));
-      
+
       setEditingBoardId(null);
       setEditBoardName('');
     } catch (err) {
@@ -458,20 +456,20 @@ const WorkManagement = ({ user, onLogout }) => {
     const baseName = proposedName.trim();
     const existingNames = currentBoard?.groups.map(group => group.name) || [];
     const existingNamesLowerCase = existingNames.map(name => name.toLowerCase());
-    
+
     if (!existingNamesLowerCase.includes(baseName.toLowerCase())) {
       return baseName;
     }
-      
-      // tìm số thứ tự cao nhất cho tên này
+
+    // tìm số thứ tự cao nhất cho tên này
     let counter = 2;
     let uniqueName = `${baseName} (${counter})`;
-    
+
     while (existingNamesLowerCase.includes(uniqueName.toLowerCase())) {
       counter++;
       uniqueName = `${baseName} (${counter})`;
     }
-    
+
     return uniqueName;
   };
 
@@ -481,11 +479,11 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('CREATE_GROUP', currentUser.role));
       return;
     }
-    
+
     if (newGroupName.trim()) {
       try {
         const uniqueName = generateUniqueGroupName(newGroupName);
-        
+
         const response = await groupService.createGroup({
           name: uniqueName,
           color: 'blue',
@@ -493,25 +491,25 @@ const WorkManagement = ({ user, onLogout }) => {
           boardId: currentBoardId,
           createdById: currentUser.id
         });
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
             workspace.id === currentWorkspaceId
               ? {
-                  ...workspace,
-                  boards: workspace.boards.map(board =>
-                    board.id === currentBoardId
-                      ? { ...board, groups: [...board.groups, { ...response.data, tasks: [] }] }
-                      : board
-                  )
-                }
+                ...workspace,
+                boards: workspace.boards.map(board =>
+                  board.id === currentBoardId
+                    ? { ...board, groups: [...board.groups, { ...response.data, tasks: [] }] }
+                    : board
+                )
+              }
               : workspace
-        )
-      }));
-      
-      setNewGroupName('');
-      setShowAddGroup(false);
+          )
+        }));
+
+        setNewGroupName('');
+        setShowAddGroup(false);
       } catch (err) {
         alert('Failed to create group');
         console.error(err);
@@ -523,20 +521,20 @@ const WorkManagement = ({ user, onLogout }) => {
     const baseName = proposedName.trim();
     const existingNames = currentWorkspace?.boards.map(board => board.name) || [];
     const existingNamesLowerCase = existingNames.map(name => name.toLowerCase());
-    
+
     if (!existingNamesLowerCase.includes(baseName.toLowerCase())) {
       return baseName;
     }
-    
+
     // Find the highest suffix number for this base name
     let counter = 2;
     let uniqueName = `${baseName} (${counter})`;
-    
+
     while (existingNamesLowerCase.includes(uniqueName.toLowerCase())) {
       counter++;
       uniqueName = `${baseName} (${counter})`;
     }
-    
+
     return uniqueName;
   };
 
@@ -546,11 +544,11 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('CREATE_BOARD', currentUser.role));
       return;
     }
-    
+
     if (newBoardName.trim()) {
       try {
         const uniqueName = generateUniqueBoardName(newBoardName);
-        
+
         const response = await boardService.createBoard({
           name: uniqueName,
           description: '',
@@ -558,20 +556,20 @@ const WorkManagement = ({ user, onLogout }) => {
           workspaceId: currentWorkspaceId,
           createdById: currentUser.id
         });
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
             workspace.id === currentWorkspaceId
               ? { ...workspace, boards: [...workspace.boards, { ...response.data, groups: [] }] }
               : workspace
-        )
-      }));
-      
-      setNewBoardName('');
-      setShowAddBoard(false);
-      // Chuyển sang bảng mới
-      setCurrentBoardId(response.data.id);
+          )
+        }));
+
+        setNewBoardName('');
+        setShowAddBoard(false);
+        // Chuyển sang bảng mới
+        setCurrentBoardId(response.data.id);
       } catch (err) {
         alert('Failed to create board');
         console.error(err);
@@ -587,25 +585,25 @@ const WorkManagement = ({ user, onLogout }) => {
         color: updatedGroup.color,
         sortOrder: updatedGroup.sortOrder
       });
-      
+
       // Cập nhật state local
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace =>
           workspace.id === currentWorkspaceId
             ? {
-                ...workspace,
-                boards: workspace.boards.map(board =>
-                  board.id === currentBoardId
-                    ? {
-                        ...board,
-                        groups: board.groups.map(group =>
-                          group.id === updatedGroup.id ? updatedGroup : group
-                        )
-                      }
-                    : board
-                )
-              }
+              ...workspace,
+              boards: workspace.boards.map(board =>
+                board.id === currentBoardId
+                  ? {
+                    ...board,
+                    groups: board.groups.map(group =>
+                      group.id === updatedGroup.id ? updatedGroup : group
+                    )
+                  }
+                  : board
+              )
+            }
             : workspace
         )
       }));
@@ -619,22 +617,22 @@ const WorkManagement = ({ user, onLogout }) => {
     if (window.confirm('Bạn có chắc muốn xóa nhóm này cùng với tất cả các task trong nhóm này không?')) {
       try {
         await groupService.deleteGroup(groupId);
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
             workspace.id === currentWorkspaceId
               ? {
-                  ...workspace,
-                  boards: workspace.boards.map(board =>
-                    board.id === currentBoardId
-                      ? { ...board, groups: board.groups.filter(group => group.id !== groupId) }
-                      : board
-                  )
-                }
+                ...workspace,
+                boards: workspace.boards.map(board =>
+                  board.id === currentBoardId
+                    ? { ...board, groups: board.groups.filter(group => group.id !== groupId) }
+                    : board
+                )
+              }
               : workspace
-        )
-      }));
+          )
+        }));
       } catch (err) {
         if (err.response?.data?.message) {
           alert(err.response.data.message);
@@ -653,33 +651,33 @@ const WorkManagement = ({ user, onLogout }) => {
       alert(getPermissionDeniedMessage('CREATE_TASK', currentUser.role));
       return;
     }
-    
+
     try {
       const response = await taskService.createTask({
         ...task,
         groupId: groupId,
         createdById: currentUser.id
       });
-      
+
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace =>
           workspace.id === currentWorkspaceId
             ? {
-                ...workspace,
-                boards: workspace.boards.map(board =>
-                  board.id === currentBoardId
-                    ? {
-                        ...board,
-                        groups: board.groups.map(group =>
-                          group.id === groupId
-                            ? { ...group, tasks: [...group.tasks, response.data] }
-                            : group
-                        )
-                      }
-                    : board
-                )
-              }
+              ...workspace,
+              boards: workspace.boards.map(board =>
+                board.id === currentBoardId
+                  ? {
+                    ...board,
+                    groups: board.groups.map(group =>
+                      group.id === groupId
+                        ? { ...group, tasks: [...group.tasks, response.data] }
+                        : group
+                    )
+                  }
+                  : board
+              )
+            }
             : workspace
         )
       }));
@@ -694,31 +692,31 @@ const WorkManagement = ({ user, onLogout }) => {
       console.log('Updating task with data:', updatedTask);
       const response = await taskService.updateTask(updatedTask.id, updatedTask);
       console.log('Update response:', response.data);
-      
+
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace =>
           workspace.id === currentWorkspaceId
             ? {
-                ...workspace,
-                boards: workspace.boards.map(board =>
-                  board.id === currentBoardId
-                    ? {
-                        ...board,
-                        groups: board.groups.map(group =>
-                          group.id === groupId
-                            ? {
-                                ...group,
-                                tasks: group.tasks.map(task =>
-                                  task.id === updatedTask.id ? response.data : task
-                                )
-                              }
-                            : group
-                        )
-                      }
-                    : board
-                )
-              }
+              ...workspace,
+              boards: workspace.boards.map(board =>
+                board.id === currentBoardId
+                  ? {
+                    ...board,
+                    groups: board.groups.map(group =>
+                      group.id === groupId
+                        ? {
+                          ...group,
+                          tasks: group.tasks.map(task =>
+                            task.id === updatedTask.id ? response.data : task
+                          )
+                        }
+                        : group
+                    )
+                  }
+                  : board
+              )
+            }
             : workspace
         )
       }));
@@ -733,26 +731,26 @@ const WorkManagement = ({ user, onLogout }) => {
     if (window.confirm('Bạn có chắc muốn xóa task này ?')) {
       try {
         await taskService.deleteTask(taskId);
-        
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
             workspace.id === currentWorkspaceId
               ? {
-                  ...workspace,
-                  boards: workspace.boards.map(board =>
-                    board.id === currentBoardId
-                      ? {
-                          ...board,
-                          groups: board.groups.map(group =>
-                            group.id === groupId
-                              ? { ...group, tasks: group.tasks.filter(task => task.id !== taskId) }
-                              : group
-                          )
-                        }
-                      : board
-                  )
-                }
+                ...workspace,
+                boards: workspace.boards.map(board =>
+                  board.id === currentBoardId
+                    ? {
+                      ...board,
+                      groups: board.groups.map(group =>
+                        group.id === groupId
+                          ? { ...group, tasks: group.tasks.filter(task => task.id !== taskId) }
+                          : group
+                      )
+                    }
+                    : board
+                )
+              }
               : workspace
           )
         }));
@@ -831,7 +829,7 @@ const WorkManagement = ({ user, onLogout }) => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={loadWorkspaces}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -884,18 +882,18 @@ const WorkManagement = ({ user, onLogout }) => {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {/* Role Badge */}
           <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${getRoleBadge(currentUser.role)}`}>
             <span>{getRoleIcon(currentUser.role)}</span>
             <span>{currentUser.role}</span>
           </div>
-          
+
           <ThemeToggle />
-          <UserDropdown 
-            user={currentUser} 
-            onLogout={onLogout} 
+          <UserDropdown
+            user={currentUser}
+            onLogout={onLogout}
             onShowUserProfile={handleShowUserProfile}
             onShowAdminPanel={() => setShowAdminPanel(true)}
           />
@@ -913,7 +911,7 @@ const WorkManagement = ({ user, onLogout }) => {
                   {currentWorkspace?.name?.charAt(0)?.toUpperCase() || 'W'}
                 </span>
               </div>
-              
+
               {!sidebarCollapsed && (
                 <>
                   {/* Workspace Selector */}
@@ -992,12 +990,11 @@ const WorkManagement = ({ user, onLogout }) => {
                         </div>
                       ) : (
                         /* View Mode */
-                        <div 
-                          className={`w-full text-center px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                            workspace.id === currentWorkspaceId 
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
-                              : 'text-gray-700 dark:text-gray-200'
-                          }`}
+                        <div
+                          className={`w-full text-center px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${workspace.id === currentWorkspaceId
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                            : 'text-gray-700 dark:text-gray-200'
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <button
@@ -1019,7 +1016,7 @@ const WorkManagement = ({ user, onLogout }) => {
                                 {workspace.boards.length} board{workspace.boards.length !== 1 ? 's' : ''}
                               </div>
                             </button>
-                            
+
                             {/* Edit/Delete Actions - based on permissions */}
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {canDo('EDIT_WORKSPACE', currentUser.role) && (
@@ -1052,7 +1049,7 @@ const WorkManagement = ({ user, onLogout }) => {
                       )}
                     </div>
                   ))}
-                  
+
                   {/* Add Workspace - only for users with permission */}
                   {canDo('CREATE_WORKSPACE', currentUser.role) && (
                     <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
@@ -1128,7 +1125,7 @@ const WorkManagement = ({ user, onLogout }) => {
             </div>
           )}
           {/* Danh sách project/board + nút mở sidebar (nếu collapse) */}
-          <div className={`space-y-2 px-4 flex-1 flex flex-col ${sidebarCollapsed ? 'items-center' : ''}`}> 
+          <div className={`space-y-2 px-4 flex-1 flex flex-col ${sidebarCollapsed ? 'items-center' : ''}`}>
             {currentWorkspace?.boards.map((board, idx) => (
               <div key={board.id} className="group relative">
                 {editingBoardId === board.id ? (
@@ -1163,11 +1160,10 @@ const WorkManagement = ({ user, onLogout }) => {
                 ) : (
                   /* View Mode */
                   <div
-                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors duration-200 ${
-                      board.id === currentBoardId 
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                    } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors duration-200 ${board.id === currentBoardId
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                      } ${sidebarCollapsed ? 'justify-center' : ''}`}
                     style={{ position: 'relative' }}
                   >
                     <div
@@ -1181,7 +1177,7 @@ const WorkManagement = ({ user, onLogout }) => {
                         <span className="text-sm font-medium truncate max-w-[120px]" title={board.name}>{board.name}</span>
                       )}
                     </div>
-                    
+
                     {/* Edit/Delete Actions - based on permissions */}
                     {!sidebarCollapsed && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1211,7 +1207,7 @@ const WorkManagement = ({ user, onLogout }) => {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Khi sidebar thu gọn, hiện tooltip tên project khi hover vào icon */}
                     {sidebarCollapsed && (
                       <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
@@ -1270,7 +1266,7 @@ const WorkManagement = ({ user, onLogout }) => {
                     Chào mừng đến với {currentWorkspace?.name}
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-8 text-base leading-relaxed">
-                    {canDo('CREATE_BOARD', currentUser.role) 
+                    {canDo('CREATE_BOARD', currentUser.role)
                       ? "Workspace này đang trống. Tạo board đầu tiên để bắt đầu tổ chức dự án và công việc của bạn."
                       : "Workspace này đang trống. Liên hệ Admin hoặc Manager để tạo board mới."
                     }
@@ -1293,83 +1289,83 @@ const WorkManagement = ({ user, onLogout }) => {
               </div>
             </>
           )}
-          
+
           {currentBoard && (
             <>
 
-          {/* Task Groups */}
-          {currentBoard?.groups
-            .filter(group => {
-              // Áp dụng bộ lọc tìm kiếm
-              if (!searchFilter) return true;
-              
-              if (searchFilter.type === 'group') {
-                return group.name === searchFilter.groupName;
-              }
-              
-              if (searchFilter.type === 'task') {
-                // Chỉ hiển thị các nhóm chứa task được lọc
-                return group.tasks.some(task => task.id === searchFilter.taskId);
-              }
-              
-              return true;
-            })
-            .map((group) => (
-            <TaskGroup
-              key={group.id}
-              group={group}
-              allGroups={currentBoard?.groups || []}
-              searchFilter={searchFilter}
-              isExpanded={allGroupsExpanded}
-              onUpdateGroup={handleUpdateGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onAddTask={handleAddTask}
-              onUpdateTask={handleUpdateTask}
-              onDeleteTask={handleDeleteTask}
-              currentUser={currentUser}
-            />
-          ))}
+              {/* Task Groups */}
+              {currentBoard?.groups
+                .filter(group => {
+                  // Áp dụng bộ lọc tìm kiếm
+                  if (!searchFilter) return true;
 
-          {/* Add new group - only for users with permission */}
-          {canDo('CREATE_GROUP', currentUser.role) && (
-            <>
-              {showAddGroup ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={newGroupName}
-                      onChange={(e) => setNewGroupName(e.target.value)}
-                      placeholder="Group name"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddGroup()}
-                      autoFocus
-                    />
+                  if (searchFilter.type === 'group') {
+                    return group.name === searchFilter.groupName;
+                  }
+
+                  if (searchFilter.type === 'task') {
+                    // Chỉ hiển thị các nhóm chứa task được lọc
+                    return group.tasks.some(task => task.id === searchFilter.taskId);
+                  }
+
+                  return true;
+                })
+                .map((group) => (
+                  <TaskGroup
+                    key={group.id}
+                    group={group}
+                    allGroups={currentBoard?.groups || []}
+                    searchFilter={searchFilter}
+                    isExpanded={allGroupsExpanded}
+                    onUpdateGroup={handleUpdateGroup}
+                    onDeleteGroup={handleDeleteGroup}
+                    onAddTask={handleAddTask}
+                    onUpdateTask={handleUpdateTask}
+                    onDeleteTask={handleDeleteTask}
+                    currentUser={currentUser}
+                  />
+                ))}
+
+              {/* Add new group - only for users with permission */}
+              {canDo('CREATE_GROUP', currentUser.role) && (
+                <>
+                  {showAddGroup ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                          placeholder="Group name"
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddGroup()}
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleAddGroup}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => setShowAddGroup(false)}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <button
-                      onClick={handleAddGroup}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      onClick={() => setShowAddGroup(true)}
+                      className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                     >
-                      Add
+                      <Plus className="w-4 h-4" />
+                      Add new group
                     </button>
-                    <button
-                      onClick={() => setShowAddGroup(false)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAddGroup(true)}
-                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add new group
-                </button>
+                  )}
+                </>
               )}
-            </>
-          )}
             </>
           )}
         </main>
@@ -1377,8 +1373,8 @@ const WorkManagement = ({ user, onLogout }) => {
 
       {/* User Profile Modal */}
       {showUserProfile && (
-        <UserProfile 
-          user={currentUser} 
+        <UserProfile
+          user={currentUser}
           onClose={() => setShowUserProfile(false)}
           onUpdateUser={setCurrentUser}
         />
