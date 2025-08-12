@@ -14,7 +14,7 @@ const AdminPanel = ({ onClose, currentUser }) => {
   const [boards, setBoards] = useState([]);
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTaskAssignModal, setShowTaskAssignModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -31,6 +31,7 @@ const AdminPanel = ({ onClose, currentUser }) => {
   useEffect(() => {
     loadUsers();
     loadWorkspaces();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load boards when workspace changes
@@ -38,6 +39,7 @@ const AdminPanel = ({ onClose, currentUser }) => {
     if (selectedWorkspace) {
       loadBoards(selectedWorkspace.id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWorkspace]);
 
   // Load tasks when board changes
@@ -49,13 +51,13 @@ const AdminPanel = ({ onClose, currentUser }) => {
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
+      // setLoading(true);
       const response = await userService.getAllUsers();
       setUsers(response.data || []);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 

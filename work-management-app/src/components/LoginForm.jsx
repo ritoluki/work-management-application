@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Github, Eye, EyeOff } from 'lucide-react';
-import { DEMO_ACCOUNTS, getRoleColor, getRoleBadge, getRoleIcon } from '../utils/mockUsers';
+// import { DEMO_ACCOUNTS, getRoleColor, getRoleBadge, getRoleIcon } from '../utils/mockUsers';
 import { authService } from '../services/authService';
 
 const LoginForm = ({ onLogin, onSwitchToRegister }) => {
@@ -45,40 +45,40 @@ const LoginForm = ({ onLogin, onSwitchToRegister }) => {
     }
   };
 
-  const handleDemoLogin = async (demoAccount) => {
-    setCredentials({ email: demoAccount.email, password: demoAccount.password });
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const response = await authService.login(demoAccount.email, demoAccount.password);
-      
-      if (response.data) {
-        onLogin(response.data);
-      } else {
-        // Fallback to mock login if backend fails
-        onLogin({
-          id: demoAccount.id,
-          name: `${demoAccount.firstName} ${demoAccount.lastName}`,
-          email: demoAccount.email,
-          role: demoAccount.role,
-          avatar: demoAccount.firstName.charAt(0) + demoAccount.lastName.charAt(0)
-        });
-      }
-    } catch (err) {
-      console.error('Demo login error:', err);
-      // Fallback to mock login
-      onLogin({
-        id: demoAccount.id,
-        name: `${demoAccount.firstName} ${demoAccount.lastName}`,
-        email: demoAccount.email,
-        role: demoAccount.role,
-        avatar: demoAccount.firstName.charAt(0) + demoAccount.lastName.charAt(0)
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleDemoLogin = async (demoAccount) => {
+  //   setCredentials({ email: demoAccount.email, password: demoAccount.password });
+  //   setIsLoading(true);
+  //   setError('');
+  //   
+  //   try {
+  //     const response = await authService.login(demoAccount.email, demoAccount.password);
+  //     
+  //     if (response.data) {
+  //       onLogin(response.data);
+  //     } else {
+  //       // Fallback to mock login if backend fails
+  //       onLogin({
+  //         id: demoAccount.id,
+  //         name: `${demoAccount.firstName} ${demoAccount.lastName}`,
+  //         email: demoAccount.email,
+  //         role: demoAccount.role,
+  //         avatar: demoAccount.firstName.charAt(0) + demoAccount.lastName.charAt(0)
+  //       });
+  //     }
+  //   } catch (err) {
+  //     console.error('Demo login error:', err);
+  //     // Fallback to mock login
+  //     onLogin({
+  //       id: demoAccount.id,
+  //       name: `${demoAccount.firstName} ${demoAccount.lastName}`,
+  //       email: demoAccount.email,
+  //       role: demoAccount.role,
+  //       avatar: demoAccount.firstName.charAt(0) + demoAccount.lastName.charAt(0)
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const GoogleIcon = () => (
     <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">

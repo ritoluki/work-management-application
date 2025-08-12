@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { User, Mail, Calendar, Edit2, Save, X, Camera, Lock, Settings, Phone, MapPin, Briefcase, Building } from 'lucide-react';
+import { User, Mail, Calendar, Edit2, Save, X, Camera, Lock, Phone, MapPin, Briefcase, Building } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-import { getRoleBadge, getRoleIcon } from '../utils/mockUsers';
+import { getRoleIcon } from '../utils/mockUsers';
 import { generateAvatar, getUserAvatar, getUserDisplayName } from '../utils/avatarUtils';
 
 const UserProfile = ({ user, onClose, onUpdateUser }) => {

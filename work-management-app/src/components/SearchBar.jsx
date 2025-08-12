@@ -36,6 +36,7 @@ const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, data, onQueryChange]);
 
   // Perform search across all data

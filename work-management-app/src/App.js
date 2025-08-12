@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import WorkManagement from './components/WorkManagement';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
-import { authService } from './services/authService';
+// import { authService } from './services/authService';
 import { ThemeProvider } from './context/ThemeContext';
 import './App.css';
 

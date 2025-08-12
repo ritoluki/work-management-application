@@ -50,6 +50,7 @@ const WorkManagement = ({ user, onLogout }) => {
   // Load workspaces when component mounts
   useEffect(() => {
     loadWorkspaces();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load tasks for current board when it changes
@@ -68,6 +69,7 @@ const WorkManagement = ({ user, onLogout }) => {
       };
       loadAllTasksForCurrentBoard();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBoardId]);
 
   // đóng ws khi click outside
