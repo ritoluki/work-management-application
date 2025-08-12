@@ -1,7 +1,9 @@
 package com.example.workmanagementbackend.controller;
 
+import com.example.workmanagementbackend.dto.NotificationDTO;
 import com.example.workmanagementbackend.dto.TaskDTO;
-import com.example.workmanagementbackend.service.TaskService;
+import com.example.workmanagementbackend.entity.Notification;
+import com.example.workmanagementbackend.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,63 @@ public class TaskController {
 
     @Autowired
     private TaskService taskService;
+    
+    @Autowired
+    private NotificationService notificationService;
+    
+    @Autowired
+    private PermissionService permissionService;
+    
+    @Autowired
+    private GroupService groupService;
+    
+    @Autowired
+    private BoardService boardService;
+    
+    @Autowired
+    private WorkspaceService workspaceService;
+    
+    @Autowired
+    private UserService userService;
+
+    /**
+     * Helper method to get task location information
+     */
+    private TaskLocationInfo getTaskLocationInfo(Long groupId) {
+        try {
+            var group = groupService.getGroupById(groupId);
+            var board = boardService.getBoardById(group.getBoardId());
+            var workspace = workspaceService.getWorkspaceById(board.getWorkspaceId());
+            
+            return new TaskLocationInfo(
+                workspace.getName(),
+                board.getName(),
+                group.getName()
+            );
+        } catch (Exception e) {
+            System.err.println("Error getting task location info: " + e.getMessage());
+            return new TaskLocationInfo("Unknown Workspace", "Unknown Board", "Unknown Group");
+        }
+    }
+    
+    /**
+     * Helper class to hold task location information
+     */
+    private static class TaskLocationInfo {
+        private final String workspaceName;
+        private final String boardName;
+        private final String groupName;
+        
+        public TaskLocationInfo(String workspaceName, String boardName, String groupName) {
+            this.workspaceName = workspaceName;
+            this.boardName = boardName;
+            this.groupName = groupName;
+        }
+        
+        public String getWorkspaceName() { return workspaceName; }
+        public String getBoardName() { return boardName; }
+        public String getGroupName() { return groupName; }
+    }
 
     @GetMapping
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
@@ -60,9 +119,62 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO) {
+    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO, @RequestParam Long currentUserId) {
         try {
-            return ResponseEntity.ok(taskService.createTask(taskDTO));
+            // Check permission - only MANAGER and above can create tasks
+            if (!permissionService.canCreateTask(currentUserId)) {
+                System.err.println("User " + currentUserId + " does not have permission to create tasks");
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
+            System.out.println("Creating new task: " + taskDTO.getName());
+            TaskDTO createdTask = taskService.createTask(taskDTO);
+            
+            // Send notification if task is assigned to someone
+            if (createdTask.getAssignedToId() != null) {
+                System.out.println("Sending detailed task creation notification to user " + createdTask.getAssignedToId());
+                
+                // Get task location information
+                TaskLocationInfo locationInfo = getTaskLocationInfo(createdTask.getGroupId());
+                
+                // Get assignor name
+                String assignedBy = "Admin";
+                try {
+                    var currentUserOpt = userService.getUserById(currentUserId);
+                    if (currentUserOpt.isPresent()) {
+                        assignedBy = currentUserOpt.get().getRole().toString();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Could not get current user info: " + e.getMessage());
+                }
+                
+                // Create detailed notification
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(createdTask.getAssignedToId());
+                notification.setType(Notification.NotificationType.TASK_ASSIGNED);
+                notification.setTitle("Task mới được giao");
+                notification.setMessage("Bạn đã được giao task mới \"" + createdTask.getName() + "\""); // Will be replaced by detailed message
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(createdTask.getId());
+                notification.setCreatedById(currentUserId); // Task creator
+                
+                // Send detailed notification
+                notificationService.sendTaskNotification(
+                    notification,
+                    createdTask.getName(),
+                    createdTask.getDueDate() != null ? createdTask.getDueDate().toString() : null,
+                    locationInfo.getWorkspaceName(),
+                    locationInfo.getBoardName(),
+                    locationInfo.getGroupName(),
+                    assignedBy
+                );
+                
+                System.out.println("Detailed task creation notification sent successfully!");
+            } else {
+                System.out.println("No user assigned to new task - skipping notification");
+            }
+            
+            return ResponseEntity.ok(createdTask);
         } catch (Exception e) {
             System.err.println("Error creating task: " + e.getMessage());
             e.printStackTrace();
@@ -71,11 +183,86 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO) {
+    public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO, @RequestParam Long currentUserId) {
         try {
+            // Check permission - MANAGER+ can edit any task, MEMBER can only edit assigned tasks
+            if (!permissionService.canEditTask(currentUserId, id)) {
+                System.err.println("User " + currentUserId + " does not have permission to edit task " + id);
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             System.out.println("Updating task with ID: " + id);
             System.out.println("TaskDTO: " + taskDTO);
-            return ResponseEntity.ok(taskService.updateTask(id, taskDTO));
+            
+            // Get old task to check status changes
+            TaskDTO oldTask = taskService.getTaskById(id);
+            
+            // Update task
+            TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
+            System.out.println("Updated task assigned to ID: " + updatedTask.getAssignedToId());
+            
+            // Check if task status changed to DONE
+            boolean taskCompleted = !"DONE".equals(oldTask.getStatus()) && "DONE".equals(updatedTask.getStatus());
+            
+            // Send notification if task has assigned user OR creator
+            Long notificationUserId = null;
+            if (updatedTask.getAssignedToId() != null) {
+                notificationUserId = updatedTask.getAssignedToId();
+                System.out.println("Sending notification to assigned user: " + notificationUserId);
+            } else if (updatedTask.getCreatedById() != null) {
+                notificationUserId = updatedTask.getCreatedById();
+                System.out.println("Sending notification to task creator: " + notificationUserId);
+            }
+            
+            if (notificationUserId != null) {
+                System.out.println("Sending notification for task update...");
+                
+                // Different notification types based on completion status
+                Notification.NotificationType notificationType;
+                if (taskCompleted) {
+                    notificationType = Notification.NotificationType.TASK_COMPLETED;
+                    System.out.println("Sending TASK_COMPLETED notification");
+                } else {
+                    notificationType = Notification.NotificationType.TASK_UPDATED;
+                    System.out.println("Sending TASK_UPDATED notification");
+                }
+                
+                // Use enhanced notification method
+                try {
+                    notificationService.sendEnhancedTaskNotification(
+                        updatedTask.getId(),
+                        notificationUserId, 
+                        notificationType,
+                        currentUserId
+                    );
+                    System.out.println("Enhanced notification sent successfully!");
+                } catch (Exception notificationError) {
+                    System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
+                    
+                    // Fallback to basic notification
+                    NotificationDTO notification = new NotificationDTO();
+                    notification.setUserId(notificationUserId);
+                    notification.setType(notificationType);
+                    
+                    if (taskCompleted) {
+                        notification.setTitle("Task hoàn thành");
+                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được hoàn thành! 🎉");
+                    } else {
+                        notification.setTitle("Task được cập nhật");
+                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được cập nhật");
+                    }
+                    
+                    notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                    notification.setRelatedEntityId(updatedTask.getId());
+                    notification.setCreatedById(currentUserId);
+                    
+                    notificationService.sendNotification(notification);
+                }
+            } else {
+                System.out.println("No assigned user or creator - skipping notification");
+            }
+            
+            return ResponseEntity.ok(updatedTask);
         } catch (Exception e) {
             System.err.println("Error updating task: " + e.getMessage());
             e.printStackTrace();
@@ -84,9 +271,46 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/assign/{userId}")
-    public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId) {
+    public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId, @RequestParam Long currentUserId) {
         try {
-            return ResponseEntity.ok(taskService.assignTask(taskId, userId));
+            // Check permission - only MANAGER+ can assign tasks
+            if (!permissionService.canAssignTask(currentUserId)) {
+                System.err.println("User " + currentUserId + " does not have permission to assign tasks");
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
+            System.out.println("Assigning task " + taskId + " to user " + userId);
+            TaskDTO assignedTask = taskService.assignTask(taskId, userId);
+            
+            // Send notification to assigned user
+            System.out.println("Sending assignment notification to user " + userId);
+            
+            // Use enhanced notification method
+            try {
+                notificationService.sendEnhancedTaskNotification(
+                    assignedTask.getId(),
+                    userId, 
+                    Notification.NotificationType.TASK_ASSIGNED,
+                    currentUserId
+                );
+                System.out.println("Enhanced assignment notification sent successfully!");
+            } catch (Exception notificationError) {
+                System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
+                
+                // Fallback to basic notification
+                NotificationDTO notification = new NotificationDTO();
+                notification.setUserId(userId);
+                notification.setType(Notification.NotificationType.TASK_ASSIGNED);
+                notification.setTitle("Task được giao");
+                notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
+                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
+                notification.setRelatedEntityId(assignedTask.getId());
+                notification.setCreatedById(currentUserId);
+                
+                notificationService.sendNotification(notification);
+            }
+            
+            return ResponseEntity.ok(assignedTask);
         } catch (Exception e) {
             System.err.println("Error assigning task: " + e.getMessage());
             e.printStackTrace();
@@ -95,8 +319,14 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id, @RequestParam Long currentUserId) {
         try {
+            // Check permission - MANAGER+ can delete any task, MEMBER can only delete own tasks
+            if (!permissionService.canDeleteTask(currentUserId, id)) {
+                System.err.println("User " + currentUserId + " does not have permission to delete task " + id);
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             taskService.deleteTask(id);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {

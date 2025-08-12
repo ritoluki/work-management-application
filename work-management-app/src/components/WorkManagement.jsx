@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Plus, Edit2, Trash2, Check } from "lucide-react";
+import { ChevronDown, Plus, Edit2, Trash2, Check, Search, X } from "lucide-react";
 import TaskGroup from './TaskGroup';
 import UserDropdown from './UserDropdown';
 import UserProfile from './UserProfile';
 import AdminPanel from './AdminPanel';
 import ThemeToggle from './ThemeToggle';
 import SearchBar from './SearchBar';
+import NotificationDropdown from './NotificationDropdown';
+import { NotificationProvider } from '../context/NotificationContext';
 import { canDo, getPermissionDeniedMessage } from '../utils/permissions';
 import { getRoleBadge, getRoleIcon } from '../utils/mockUsers';
 import { workspaceService } from '../services/workspaceService';
@@ -657,8 +659,8 @@ const WorkManagement = ({ user, onLogout }) => {
         ...task,
         groupId: groupId,
         createdById: currentUser.id
-      });
-
+      }, currentUser.id);
+      
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace =>
@@ -690,7 +692,7 @@ const WorkManagement = ({ user, onLogout }) => {
   const handleUpdateTask = async (groupId, updatedTask) => {
     try {
       console.log('Updating task with data:', updatedTask);
-      const response = await taskService.updateTask(updatedTask.id, updatedTask);
+      const response = await taskService.updateTask(updatedTask.id, updatedTask, currentUser.id);
       console.log('Update response:', response.data);
 
       setData(prevData => ({
@@ -730,8 +732,8 @@ const WorkManagement = ({ user, onLogout }) => {
   const handleDeleteTask = async (groupId, taskId) => {
     if (window.confirm('Bạn có chắc muốn xóa task này ?')) {
       try {
-        await taskService.deleteTask(taskId);
 
+       await taskService.deleteTask(taskId, currentUser.id);
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(workspace =>
@@ -797,6 +799,11 @@ const WorkManagement = ({ user, onLogout }) => {
 
   // Xử lý thay đổi trong thanh tìm kiếm (để xóa bộ lọc)
   const handleSearchQueryChange = (query) => {
+    // Không clear filter nếu nó được set từ notification và user chưa search gì khác
+    if (searchFilter?.fromNotification && (!query || query.trim() === '')) {
+      return; // Giữ nguyên filter từ notification
+    }
+    
     if (!query || query.trim() === '') {
       // Xóa bộ lọc khi tìm kiếm trống
       setSearchFilter(null);
@@ -811,6 +818,55 @@ const WorkManagement = ({ user, onLogout }) => {
   // Xử lý điều hướng profile người dùng
   const handleShowUserProfile = () => {
     setShowUserProfile(true);
+  };
+
+  // Xử lý điều hướng đến task từ thông báo
+  const handleNavigateToTask = async (navigationData) => {
+    if (!navigationData) return;
+    
+    console.log('Navigating to task:', navigationData);
+    
+    // Tìm workspace theo tên
+    const targetWorkspace = data.workspaces.find(w => 
+      w.name === navigationData.workspaceName
+    );
+    
+    if (!targetWorkspace) {
+      alert(`Không tìm thấy workspace "${navigationData.workspaceName}"`);
+      return;
+    }
+    
+    // Tìm board theo tên
+    const targetBoard = targetWorkspace.boards.find(b => 
+      b.name === navigationData.boardName
+    );
+    
+    if (!targetBoard) {
+      alert(`Không tìm thấy board "${navigationData.boardName}" trong workspace "${navigationData.workspaceName}"`);
+      return;
+    }
+    
+    // Chuyển đến workspace và board trước
+    setCurrentWorkspaceId(targetWorkspace.id);
+    setCurrentBoardId(targetBoard.id);
+    
+    // Mở rộng tất cả groups để user có thể thấy task
+    setAllGroupsExpanded(true);
+    
+    // Đặt search filter với delay để đảm bảo data đã load xong
+    setTimeout(() => {
+      if (navigationData.taskId && navigationData.groupName) {
+        console.log('Setting search filter for task:', navigationData.taskId);
+        setSearchFilter({
+          type: 'task',
+          taskId: navigationData.taskId,
+          groupName: navigationData.groupName,
+          searchTerm: navigationData.taskName?.toLowerCase() || '',
+          // Thêm flag để biết đây là từ notification
+          fromNotification: true
+        });
+      }
+    }, 1000); // Delay 1 giây để đảm bảo data đã load
   };
 
   // Loading state
@@ -855,7 +911,8 @@ const WorkManagement = ({ user, onLogout }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <NotificationProvider user={currentUser}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
       <header className="flex items-center gap-2 px-4 py-2 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 sticky top-0 z-[1100] transition-colors duration-200">
         {/* Logo */}
@@ -890,6 +947,8 @@ const WorkManagement = ({ user, onLogout }) => {
             <span>{currentUser.role}</span>
           </div>
 
+          <NotificationDropdown onNavigateToTask={handleNavigateToTask} />
+          
           <ThemeToggle />
           <UserDropdown
             user={currentUser}
@@ -900,7 +959,39 @@ const WorkManagement = ({ user, onLogout }) => {
         </div>
       </header>
 
-      <div className="flex h-screen relative">
+      {/* Filter Indicator */}
+      {searchFilter && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <Search className="w-4 h-4" />
+              <span>
+                {searchFilter.fromNotification ? (
+                  <>
+                    Đang xem task: <span className="font-medium">"{searchFilter.taskName}"</span>
+                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">
+                      từ thông báo
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Đang lọc task: <span className="font-medium">"{searchFilter.taskName}"</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() => setSearchFilter(null)}
+              className="flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              {searchFilter.fromNotification ? 'Trở về board' : 'Xóa bộ lọc'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`flex relative ${searchFilter ? 'h-[calc(100vh-120px)]' : 'h-screen'}`}>
         {/* Sidebar */}
         <aside className={`transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-72'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-600 h-full flex flex-col`}>
           {/* Workspace dropdown + plus + collapse button */}
@@ -1381,9 +1472,10 @@ const WorkManagement = ({ user, onLogout }) => {
 
       {/* Admin Panel Modal */}
       {showAdminPanel && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+        <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={currentUser} />
       )}
-    </div>
+      </div>
+    </NotificationProvider>
   );
 };
 

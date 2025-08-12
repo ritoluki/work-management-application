@@ -2,9 +2,9 @@ HƯỚNG DẪN HỆ THỐNG PHÂN QUYỀN - WORK MANAGEMENT APPLICATION
 ================================================================
 Tài liệu tham khảo cho việc phát triển và maintain hệ thống phân quyền
 
-Phiên bản: 1.0
+Phiên bản: 1.1
 Ngày tạo: 28/07/2024
-Ngày cập nhật: 28/07/2024
+Ngày cập nhật: 31/07/2025
 
 TỔNG QUAN HỆ THỐNG
 ==================
@@ -49,7 +49,7 @@ ROLE DEFINITIONS
 4. MEMBER (Thành viên) 👤
    - Mô tả: User làm việc với tasks được assign
    - Use case: Developer, Designer, QA, Content Writer
-   - Đặc điểm: Có thể tạo và update own tasks
+   - Đặc điểm: Chỉ có thể update tasks được assign cho họ
 
 5. VIEWER (Người xem) 👁️
    - Mô tả: Chỉ xem, không chỉnh sửa
@@ -63,7 +63,7 @@ PERMISSION MATRIX CHI TIẾT
 ========================
 Chức năng                    | Owner | Admin | Manager | Member | Viewer
 ---------------------------- |-------|-------|---------|--------|--------
-Tạo workspace               | ✅    | ❌    | ❌      | ❌     | ❌
+Tạo workspace               | ✅    | ✅    | ❌      | ❌     | ❌
 Xóa workspace               | ✅    | ❌    | ❌      | ❌     | ❌
 Archive workspace           | ✅    | ✅    | ❌      | ❌     | ❌
 Sửa workspace settings      | ✅    | ✅    | ❌      | ❌     | ❌
@@ -98,16 +98,16 @@ Reorder groups              | ✅    | ✅    | ✅      | ❌     | ❌
 ===================
 Chức năng                    | Owner | Admin | Manager | Member | Viewer
 ---------------------------- |-------|-------|---------|--------|--------
-Tạo task                    | ✅    | ✅    | ✅      | ✅     | ❌
+Tạo task                    | ✅    | ✅    | ✅      | ❌     | ❌
 Xóa task                    | ✅    | ✅    | ✅      | ❌***  | ❌
 Sửa any task                | ✅    | ✅    | ✅      | ❌     | ❌
-Sửa own task                | ✅    | ✅    | ✅      | ✅     | ❌
+Sửa assigned task           | ✅    | ✅    | ✅      | ✅**** | ❌
 Assign task                 | ✅    | ✅    | ✅      | ❌     | ❌
 Update task status          | ✅    | ✅    | ✅      | ✅**** | ❌
-Tạo subtasks                | ✅    | ✅    | ✅      | ✅     | ❌
+Tạo subtasks                | ✅    | ✅    | ✅      | ❌     | ❌
 Move task between groups    | ✅    | ✅    | ✅      | ❌     | ❌
-Set task priority           | ✅    | ✅    | ✅      | ✅     | ❌
-Set due dates               | ✅    | ✅    | ✅      | ✅     | ❌
+Set task priority           | ✅    | ✅    | ✅      | ✅**** | ❌
+Set due dates               | ✅    | ✅    | ✅      | ✅**** | ❌
 
 📌 COMMENT PERMISSIONS
 ======================
@@ -146,7 +146,7 @@ GHI CHÚ VÀ ĐIỀU KIỆN ĐặC BIỆT
 * Manager chỉ remove được Members, không thể remove Admin hoặc Owner
 ** Admin có thể đổi role nhưng không đổi role của Owner hoặc gán Owner cho người khác  
 *** Member chỉ được xóa task do chính họ tạo
-**** Member chỉ được update status cho task do họ tạo hoặc được assign
+**** Member chỉ được thực hiện actions trên tasks được assign cho họ (không bao gồm tạo task mới)
 
 NGUYÊN TẮC BẢO MẬT
 ==================

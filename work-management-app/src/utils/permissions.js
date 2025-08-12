@@ -1,44 +1,45 @@
 // Permission matrix - defines what each role can do
 export const PERMISSIONS = {
   // Workspace Management
-  'CREATE_WORKSPACE': ['ADMIN'],
-  'DELETE_WORKSPACE': ['ADMIN'], 
-  'EDIT_WORKSPACE': ['ADMIN'],
-  'VIEW_WORKSPACE': ['ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
+  'CREATE_WORKSPACE': ['OWNER', 'ADMIN'], // ADMIN can also create workspace
+  'DELETE_WORKSPACE': ['OWNER'], 
+  'EDIT_WORKSPACE': ['OWNER', 'ADMIN'],
+  'VIEW_WORKSPACE': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
   
   // Board Management  
-  'CREATE_BOARD': ['ADMIN', 'MANAGER'],
-  'DELETE_BOARD': ['ADMIN'],
-  'EDIT_BOARD': ['ADMIN', 'MANAGER'],
-  'ARCHIVE_BOARD': ['ADMIN', 'MANAGER'],
-  'VIEW_BOARD': ['ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
+  'CREATE_BOARD': ['OWNER', 'ADMIN', 'MANAGER'],
+  'DELETE_BOARD': ['OWNER', 'ADMIN'],
+  'EDIT_BOARD': ['OWNER', 'ADMIN', 'MANAGER'],
+  'ARCHIVE_BOARD': ['OWNER', 'ADMIN', 'MANAGER'],
+  'VIEW_BOARD': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
   
   // Group Management
-  'CREATE_GROUP': ['ADMIN', 'MANAGER', 'MEMBER'],
-  'DELETE_GROUP': ['ADMIN', 'MANAGER'],
-  'EDIT_GROUP': ['ADMIN', 'MANAGER', 'MEMBER'],
-  'REORDER_GROUP': ['ADMIN', 'MANAGER', 'MEMBER'],
+  'CREATE_GROUP': ['OWNER', 'ADMIN', 'MANAGER'],
+  'DELETE_GROUP': ['OWNER', 'ADMIN', 'MANAGER'],
+  'EDIT_GROUP': ['OWNER', 'ADMIN', 'MANAGER'],
+  'REORDER_GROUP': ['OWNER', 'ADMIN', 'MANAGER'],
   
-  // Task Management
-  'CREATE_TASK': ['ADMIN', 'MANAGER', 'MEMBER'],
-  'DELETE_TASK': ['ADMIN', 'MANAGER'],
-  'EDIT_TASK': ['ADMIN', 'MANAGER', 'MEMBER'],
-  'MOVE_TASK': ['ADMIN', 'MANAGER', 'MEMBER'],
-  'COMMENT_TASK': ['ADMIN', 'MANAGER', 'MEMBER'],
+  // Task Management - Updated according to new document
+  'CREATE_TASK': ['OWNER', 'ADMIN', 'MANAGER'], // MEMBER removed
+  'DELETE_TASK': ['OWNER', 'ADMIN', 'MANAGER'], // MEMBER can only delete own tasks (handled separately)
+  'EDIT_TASK': ['OWNER', 'ADMIN', 'MANAGER'], // MEMBER can only edit assigned tasks (handled separately)
+  'MOVE_TASK': ['OWNER', 'ADMIN', 'MANAGER'],
+  'COMMENT_TASK': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER'],
+  'ASSIGN_TASK': ['OWNER', 'ADMIN', 'MANAGER'],
   
-  // User Management (Future features)
-  'INVITE_USER': ['ADMIN'],
-  'REMOVE_USER': ['ADMIN'],
-  'CHANGE_USER_ROLE': ['ADMIN'],
+  // User Management
+  'INVITE_USER': ['OWNER', 'ADMIN', 'MANAGER'],
+  'REMOVE_USER': ['OWNER', 'ADMIN', 'MANAGER'],
+  'CHANGE_USER_ROLE': ['OWNER', 'ADMIN'],
   
   // Settings
-  'VIEW_SETTINGS': ['ADMIN', 'MANAGER'],
-  'EDIT_SETTINGS': ['ADMIN'],
+  'VIEW_SETTINGS': ['OWNER', 'ADMIN', 'MANAGER'],
+  'EDIT_SETTINGS': ['OWNER', 'ADMIN'],
   
   // Search & Navigation
-  'USE_SEARCH': ['ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
-  'SWITCH_WORKSPACE': ['ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
-  'SWITCH_BOARD': ['ADMIN', 'MANAGER', 'MEMBER', 'VIEWER']
+  'USE_SEARCH': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
+  'SWITCH_WORKSPACE': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'],
+  'SWITCH_BOARD': ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER']
 };
 
 // Main permission checker function
