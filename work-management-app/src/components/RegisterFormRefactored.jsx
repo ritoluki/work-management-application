@@ -14,8 +14,8 @@ const RegisterForm = ({ onLogin, onSwitchToLogin }) => {
     errors,
     updateField,
     validateAll,
+    resetForm,
     rules
-    // resetForm - not used but available if needed
   } = useValidation({
     firstName: '',
     lastName: '',
