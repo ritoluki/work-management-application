@@ -39,17 +39,18 @@ const WorkManagement = ({ user, onLogout }) => {
 
   // Load tasks for a specific group
   const loadTasksForGroup = useCallback(async (groupId) => {
+
     try {
       const response = await taskService.getTasksByGroupId(groupId);
-      
+
       setData(prevData => ({
         ...prevData,
         workspaces: prevData.workspaces.map(workspace => ({
           ...workspace,
           boards: workspace.boards.map(board => ({
             ...board,
-            groups: board.groups.map(group => 
-              group.id === groupId 
+            groups: board.groups.map(group =>
+              group.id === groupId
                 ? { ...group, tasks: response.data }
                 : group
             )
@@ -147,6 +148,7 @@ const WorkManagement = ({ user, onLogout }) => {
       if (workspace && workspace.boards.length === 0) {
         // Load boards for this workspace if not already loaded
         const boards = await boardHook.loadBoardsForWorkspace(workspaceId);
+
         setData(prevData => ({
           ...prevData,
           workspaces: prevData.workspaces.map(ws => 
@@ -195,6 +197,7 @@ const WorkManagement = ({ user, onLogout }) => {
       await workspaceHook.deleteWorkspace(workspaceId);
       
       const remainingWorkspaces = data.workspaces.filter(w => w.id !== workspaceId);
+
       setData(prevData => ({
         ...prevData,
         workspaces: remainingWorkspaces
@@ -209,6 +212,7 @@ const WorkManagement = ({ user, onLogout }) => {
     } catch (error) {
       console.error('Error deleting workspace:', error);
       throw error;
+
     }
   };
 
@@ -236,6 +240,7 @@ const WorkManagement = ({ user, onLogout }) => {
     } catch (error) {
       console.error('Error creating board:', error);
       throw error;
+
     }
   };
 
@@ -285,6 +290,7 @@ const WorkManagement = ({ user, onLogout }) => {
     } catch (error) {
       console.error('Error deleting board:', error);
       throw error;
+
     }
   };
 
@@ -317,6 +323,7 @@ const WorkManagement = ({ user, onLogout }) => {
   const handleShowAdminPanel = () => {
     setShowAdminPanel(true);
     setShowUserProfile(false);
+
   };
 
   const handleAddGroup = async () => {
@@ -355,6 +362,7 @@ const WorkManagement = ({ user, onLogout }) => {
         }
       } catch (error) {
         console.error('Error creating group:', error);
+
         alert('Failed to create group');
       }
     }
@@ -374,6 +382,7 @@ const WorkManagement = ({ user, onLogout }) => {
         }))
       }))
     }));
+
   };
 
   const handleDeleteGroup = async (groupId) => {
@@ -395,6 +404,7 @@ const WorkManagement = ({ user, onLogout }) => {
             }))
           }))
         }));
+
       }
     } catch (error) {
       console.error('Error deleting group:', error);
@@ -442,6 +452,7 @@ const WorkManagement = ({ user, onLogout }) => {
             )
           }))
         }))
+
       }));
     } catch (error) {
       console.error('Error updating task:', error);
@@ -466,6 +477,7 @@ const WorkManagement = ({ user, onLogout }) => {
       }));
     } catch (error) {
       console.error('Error deleting task:', error);
+
     }
   };
 
@@ -493,6 +505,7 @@ const WorkManagement = ({ user, onLogout }) => {
               Retry
             </button>
           </div>
+
         </div>
       </ErrorBoundary>
     );
@@ -627,6 +640,7 @@ const WorkManagement = ({ user, onLogout }) => {
                       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-96">
                           <h3 className="text-lg font-semibold mb-4">Add New Group</h3>
+
                           <input
                             type="text"
                             value={newGroupName}
@@ -682,6 +696,7 @@ const WorkManagement = ({ user, onLogout }) => {
               />
             </ErrorBoundary>
           )}
+
 
           {showAdminPanel && (
             <ErrorBoundary>
