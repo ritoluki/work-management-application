@@ -12,9 +12,28 @@ const FormInput = ({
   disabled = false,
   required = false,
   className = '',
+  autoComplete,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Auto-determine autoComplete if not provided
+  let autoCompleteValue = autoComplete;
+  if (!autoCompleteValue) {
+    if (name === 'email') {
+      autoCompleteValue = 'email';
+    } else if (name === 'password') {
+      autoCompleteValue = 'current-password';
+    } else if (name === 'confirmPassword') {
+      autoCompleteValue = 'new-password';
+    } else if (name === 'firstName') {
+      autoCompleteValue = 'given-name';
+    } else if (name === 'lastName') {
+      autoCompleteValue = 'family-name';
+    } else {
+      autoCompleteValue = 'off';
+    }
+  }
   
   const isPassword = type === 'password';
   const inputType = isPassword && showPassword ? 'text' : type;
@@ -40,6 +59,7 @@ const FormInput = ({
           onChange={handleChange}
           disabled={disabled}
           required={required}
+          autoComplete={autoCompleteValue}
           className={`
             w-full ${Icon ? 'pl-10' : 'pl-3'} ${isPassword ? 'pr-10' : 'pr-3'} py-3
             border rounded-lg text-gray-900 dark:text-white

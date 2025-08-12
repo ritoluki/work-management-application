@@ -2,11 +2,11 @@ import { useState, useCallback } from 'react';
 
 // Validation rules
 const validationRules = {
-  required: (value, message = 'This field is required') => {
+  required: (message = 'This field is required') => (value) => {
     return !value || !value.trim() ? message : null;
   },
   
-  email: (value, message = 'Invalid email address') => {
+  email: (message = 'Invalid email address') => (value) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return value && !emailRegex.test(value) ? message : null;
   },

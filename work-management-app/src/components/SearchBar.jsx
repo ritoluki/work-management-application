@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch';
 import { useDropdownNavigation } from '../hooks/useDropdownNavigation';
 import SearchDropdown from './ui/SearchDropdown';
+import ErrorBoundary from './ui/ErrorBoundary';
 
 const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
   const searchInputRef = useRef(null);
@@ -106,15 +107,17 @@ const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
       </div>
 
       {/* Search Results Dropdown */}
-      <SearchDropdown
-        isOpen={isDropdownOpen}
-        results={results}
-        selectedIndex={selectedIndex}
-        query={query}
-        onResultClick={handleResultClick}
-        onClear={clearSearch}
-        dropdownRef={dropdownRef}
-      />
+      <ErrorBoundary fallbackMessage="Search results failed to load.">
+        <SearchDropdown
+          isOpen={isDropdownOpen}
+          results={results}
+          selectedIndex={selectedIndex}
+          query={query}
+          onResultClick={handleResultClick}
+          onClear={clearSearch}
+          dropdownRef={dropdownRef}
+        />
+      </ErrorBoundary>
     </div>
   );
 };
