@@ -10,10 +10,12 @@ export const useBoard = () => {
     let baseName = proposedName.trim();
     if (!baseName) baseName = "New Board";
     
+    const existingNames = existingBoards.map(b => b.name);
+    
     let counter = 0;
     let finalName = baseName;
     
-    while (existingBoards.some(b => b.name === finalName)) {
+    while (existingNames.includes(finalName)) {
       counter++;
       finalName = `${baseName} (${counter})`;
     }

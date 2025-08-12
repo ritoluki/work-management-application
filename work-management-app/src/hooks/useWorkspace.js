@@ -9,10 +9,12 @@ export const useWorkspace = () => {
     let baseName = proposedName.trim();
     if (!baseName) baseName = "New Workspace";
     
+    const existingNames = existingWorkspaces.map(w => w.name);
+    
     let counter = 0;
     let finalName = baseName;
     
-    while (existingWorkspaces.some(w => w.name === finalName)) {
+    while (existingNames.includes(finalName)) {
       counter++;
       finalName = `${baseName} (${counter})`;
     }

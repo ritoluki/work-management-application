@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
-import { canDo } from '../utils/permissions';
+import { canDo } from '../../utils/permissions';
 
 const BoardList = ({
   boards,

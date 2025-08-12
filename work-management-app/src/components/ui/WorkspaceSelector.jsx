@@ -1,6 +1,6 @@
 import React, { useState, forwardRef } from 'react';
 import { ChevronDown, Plus, Edit2, Trash2, Check } from 'lucide-react';
-import { canDo } from '../utils/permissions';
+import { canDo } from '../../utils/permissions';
 
 const WorkspaceSelector = forwardRef(({
   workspaces,
