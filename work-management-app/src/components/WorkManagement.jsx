@@ -1218,7 +1218,6 @@ const WorkManagement = ({ user, onLogout }) => {
                 )}
               </div>
             ))}
-            {/* Nút mở sidebar - ngay dưới project cuối cùng, không có vòng tròn, luôn cố định */}
             {sidebarCollapsed && (
               <button
                 onClick={() => setSidebarCollapsed(false)}

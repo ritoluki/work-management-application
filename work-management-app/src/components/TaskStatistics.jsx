@@ -9,7 +9,6 @@ const TaskStatistics = () => {
   const [chartType, setChartType] = useState('pie'); // 'pie' or 'bar'
   const [loading, setLoading] = useState(false);
 
-  // Màu sắc cho các status
   const statusColors = {
     'TODO': '#3B82F6',          // Xanh da trời
     'WORKING_ON_IT': '#F59E0B', // Vàng
@@ -17,7 +16,6 @@ const TaskStatistics = () => {
     'EXPIRED': '#EF4444'        // Đỏ
   };
 
-  // Labels tiếng Việt cho status
   const statusLabels = {
     'TODO': 'Cần làm',
     'WORKING_ON_IT': 'Đang làm',
