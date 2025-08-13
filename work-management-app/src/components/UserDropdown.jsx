@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, LogOut, ChevronDown, Settings } from "lucide-react";
 import { getUserAvatar, getUserDisplayName } from '../utils/avatarUtils';
@@ -12,12 +12,12 @@ const UserDropdown = ({ user, onLogout, onShowUserProfile, onShowAdminPanel }) =
   const handleAvatarClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
+    
     if (!showUserDropdown && avatarRef.current) {
       const rect = avatarRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
-        left: rect.right + window.scrollX - 200
+        left: rect.right + window.scrollX - 200 
       });
     }
     setShowUserDropdown(!showUserDropdown);
@@ -72,7 +72,7 @@ const UserDropdown = ({ user, onLogout, onShowUserProfile, onShowAdminPanel }) =
       </button>
 
       {showUserDropdown && createPortal(
-        <div
+        <div 
           ref={dropdownRef}
           className="user-dropdown-menu"
           style={{
@@ -102,7 +102,7 @@ const UserDropdown = ({ user, onLogout, onShowUserProfile, onShowAdminPanel }) =
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               Thông tin người dùng
             </button>
-
+            
             {/* Hiển thị Admin Panel cho admin users */}
             {user.role === 'ADMIN' && (
               <button
@@ -118,7 +118,7 @@ const UserDropdown = ({ user, onLogout, onShowUserProfile, onShowAdminPanel }) =
                 Admin Panel
               </button>
             )}
-
+            
             <button
               onClick={(e) => {
                 e.preventDefault();

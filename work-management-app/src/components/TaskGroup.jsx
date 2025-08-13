@@ -8,18 +8,19 @@ import { userService } from '../services/userService';
 
 const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, onDeleteGroup, onAddTask, onUpdateTask, onDeleteTask, currentUser }) => {
   const [localExpanded, setLocalExpanded] = useState(true);
-  // const [hasBeenIndividuallyToggled, setHasBeenIndividuallyToggled] = useState(false);
+  const [hasBeenIndividuallyToggled, setHasBeenIndividuallyToggled] = useState(false);
   const [lastParentState, setLastParentState] = useState(isExpanded);
-
+  
+  // Sync with parent when parent changes OR reset individual toggle flag
   useEffect(() => {
     if (isExpanded !== undefined && isExpanded !== lastParentState) {
       // Parent state changed - reset individual toggle and sync
-      // setHasBeenIndividuallyToggled(false);
+      setHasBeenIndividuallyToggled(false);
       setLocalExpanded(isExpanded);
       setLastParentState(isExpanded);
     }
   }, [isExpanded, lastParentState]);
-
+  
   // Use local state for display
   const currentExpanded = localExpanded;
   const [isEditingName, setIsEditingName] = useState(false);
@@ -50,26 +51,27 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
     loadUsers();
   }, []);
 
+  // Generate unique group name with auto-suffix if needed (for editing, case-insensitive)
   const generateUniqueGroupName = (proposedName, currentGroupId) => {
     const baseName = proposedName.trim();
     const existingNames = allGroups
       .filter(g => g.id !== currentGroupId) // Exclude current group from check
       .map(g => g.name);
     const existingNamesLowerCase = existingNames.map(name => name.toLowerCase());
-
+    
     if (!existingNamesLowerCase.includes(baseName.toLowerCase())) {
       return baseName;
     }
-
+    
     // Find the highest suffix number for this base name
     let counter = 2;
     let uniqueName = `${baseName} (${counter})`;
-
+    
     while (existingNamesLowerCase.includes(uniqueName.toLowerCase())) {
       counter++;
       uniqueName = `${baseName} (${counter})`;
     }
-
+    
     return uniqueName;
   };
 
@@ -77,7 +79,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
     if (editedName.trim()) {
       const uniqueName = generateUniqueGroupName(editedName, group.id);
       onUpdateGroup({ ...group, name: uniqueName });
-      setEditedName(uniqueName);
+      setEditedName(uniqueName); // Update local state with the unique name
     }
     setIsEditingName(false);
   };
@@ -87,32 +89,32 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
     const baseName = proposedName.trim();
     const existingNames = group.tasks.map(task => task.name);
     const existingNamesLowerCase = existingNames.map(name => name.toLowerCase());
-
+    
     if (!existingNamesLowerCase.includes(baseName.toLowerCase())) {
       return baseName;
     }
-
+    
     // Find the highest suffix number for this base name
     let counter = 2;
     let uniqueName = `${baseName} (${counter})`;
-
+    
     while (existingNamesLowerCase.includes(uniqueName.toLowerCase())) {
       counter++;
       uniqueName = `${baseName} (${counter})`;
     }
-
+    
     return uniqueName;
   };
 
   const formatTimelineFromDates = (startDate, endDate) => {
     if (!startDate && !endDate) return '';
-
+    
     const formatDate = (dateStr) => {
       if (!dateStr) return '';
       const date = new Date(dateStr);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
-
+    
     if (startDate && endDate) {
       return `${formatDate(startDate)} - ${formatDate(endDate).split(' ')[1]}`;
     } else if (startDate) {
@@ -120,7 +122,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
     } else if (endDate) {
       return formatDate(endDate);
     }
-
+    
     return '';
   };
 
@@ -130,11 +132,11 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
       alert(getPermissionDeniedMessage('CREATE_TASK', currentUser.role));
       return;
     }
-
+    
     if (newTask.name.trim()) {
       const uniqueName = generateUniqueTaskName(newTask.name);
       const timeline = formatTimelineFromDates(newTask.timelineStart, newTask.timelineEnd);
-
+      
       const task = {
         ...newTask,
         id: Date.now() + Math.random(), // More unique ID
@@ -160,12 +162,12 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 mb-6">
       <div className={`border-l-4 ${getBorderColor(group.color)}`}>
-        <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 setLocalExpanded(!currentExpanded);
-                // setHasBeenIndividuallyToggled(true);
+                setHasBeenIndividuallyToggled(true);
               }}
               className="text-gray-400 hover:text-gray-600"
             >
@@ -175,7 +177,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                 <ChevronRight className="w-4 h-4" />
               )}
             </button>
-
+            
             {isEditingName ? (
               <div className="flex items-center gap-2">
                 <input
@@ -207,10 +209,10 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                 {group.name}
               </h3>
             )}
-
+            
             <span className="text-sm text-gray-500">({group.tasks.length})</span>
           </div>
-
+          
           <div className="flex items-center gap-2">
             {canDo('EDIT_GROUP', currentUser.role) && (
               <button
@@ -281,18 +283,18 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                       return String(task.id) === String(searchFilter.taskId);
                     })
                     .map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        groupId={group.id}
-                        allTasks={group.tasks}
-                        searchFilter={searchFilter}
-                        onUpdateTask={onUpdateTask}
-                        onDeleteTask={onDeleteTask}
-                        currentUser={currentUser}
-                      />
-                    ))}
-
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      groupId={group.id}
+                      allTasks={group.tasks}
+                      searchFilter={searchFilter}
+                      onUpdateTask={onUpdateTask}
+                      onDeleteTask={onDeleteTask}
+                      currentUser={currentUser}
+                    />
+                  ))}
+                  
                   {showAddTask && (
                     <tr className="border-b border-gray-100 dark:border-gray-700 bg-blue-50 dark:bg-gray-700/50">
                       <td className="py-3 px-2">
@@ -302,7 +304,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                         <input
                           type="text"
                           value={newTask.name}
-                          onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, name: e.target.value})}
                           placeholder="Task name"
                           className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-center"
                           onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
@@ -312,7 +314,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                       <td className="py-3 px-4 text-center">
                         <select
                           value={newTask.status}
-                          onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, status: e.target.value})}
                           className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         >
                           {STATUS_OPTIONS.map((option) => (
@@ -326,7 +328,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                         <input
                           type="date"
                           value={newTask.dueDate}
-                          onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
                           className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         />
                       </td>
@@ -335,14 +337,14 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                           <input
                             type="date"
                             value={newTask.timelineStart}
-                            onChange={(e) => setNewTask({ ...newTask, timelineStart: e.target.value })}
+                            onChange={(e) => setNewTask({...newTask, timelineStart: e.target.value})}
                             className="w-full px-1 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-xs focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                             placeholder="Start"
                           />
                           <input
                             type="date"
                             value={newTask.timelineEnd}
-                            onChange={(e) => setNewTask({ ...newTask, timelineEnd: e.target.value })}
+                            onChange={(e) => setNewTask({...newTask, timelineEnd: e.target.value})}
                             className="w-full px-1 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-xs focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                             placeholder="End"
                           />
@@ -352,7 +354,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                         <input
                           type="text"
                           value={newTask.notes}
-                          onChange={(e) => setNewTask({ ...newTask, notes: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, notes: e.target.value})}
                           placeholder="Add notes..."
                           className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-center"
                         />
@@ -360,7 +362,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                       <td className="py-3 px-4 text-center">
                         <select
                           value={newTask.assignedTo}
-                          onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}
                           className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         >
                           <option value="">Unassigned</option>
@@ -374,7 +376,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                       <td className="py-3 px-4 text-center">
                         <select
                           value={newTask.priority}
-                          onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                          onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
                           className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         >
                           {PRIORITY_OPTIONS.map((option) => (
@@ -404,7 +406,7 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
                       </td>
                     </tr>
                   )}
-
+                  
                   {!showAddTask && canDo('CREATE_TASK', currentUser.role) && (
                     <tr>
                       <td className="py-3 px-2">
