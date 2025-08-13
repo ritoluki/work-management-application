@@ -183,9 +183,15 @@ export const NotificationProvider = ({ children, user }) => {
   useEffect(() => {
     const loadNotifications = async () => {
       try {
+        console.log('Loading notifications for user:', user.id);
         const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread`);
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
         if (response.ok) {
           const notificationData = await response.json();
+          console.log('Raw notification data from backend:', notificationData);
+          
           // Parse metadata to add taskDetails
           const enhancedNotifications = notificationData.map(notification => {
             if (notification.metadata) {
@@ -200,70 +206,19 @@ export const NotificationProvider = ({ children, user }) => {
             return notification;
           });
           
+          console.log('Enhanced notifications:', enhancedNotifications);
           setNotifications(enhancedNotifications);
           setUnreadCount(enhancedNotifications.filter(n => !n.isRead).length);
+        } else {
+          console.error('Failed to load notifications, status:', response.status);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
         }
       } catch (error) {
         console.error('Failed to load notifications from backend:', error);
-        // Fallback to mock data for development
-        const mockNotifications = [
-          {
-            id: 1,
-            type: 'TASK_ASSIGNED',
-            title: 'Task được giao',
-            message: 'Bạn vừa được Admin giao task "Fix login bug"',
-            isRead: false,
-            createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-            relatedEntityType: 'TASK',
-            relatedEntityId: 123,
-            taskDetails: {
-              taskName: 'Fix login bug',
-              dueDate: '2025-02-05',
-              workspaceName: 'VIP 1',
-              boardName: 'Board 1',
-              groupName: 'Group 1',
-              assignedBy: 'Admin'
-            }
-          },
-          {
-            id: 2,
-            type: 'TASK_UPDATED',
-            title: 'Task được cập nhật',
-            message: 'Task "Update UI components" đã được Manager cập nhật',
-            isRead: false,
-            createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-            relatedEntityType: 'TASK',
-            relatedEntityId: 124,
-            taskDetails: {
-              taskName: 'Update UI components',
-              dueDate: '2025-02-10',
-              workspaceName: 'VIP 1',
-              boardName: 'Board 1',
-              groupName: 'Group 1',
-              updatedBy: 'Manager'
-            }
-          },
-          {
-            id: 3,
-            type: 'DEADLINE_WARNING',
-            title: 'Cảnh báo deadline',
-            message: 'Task "Deploy production" sẽ đến hạn trong 2 giờ nữa',
-            isRead: true,
-            createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-            relatedEntityType: 'TASK',
-            relatedEntityId: 125,
-            taskDetails: {
-              taskName: 'Deploy production',
-              dueDate: '2025-01-31',
-              workspaceName: 'VIP 1',
-              boardName: 'Board 1',
-              groupName: 'Group 1'
-            }
-          }
-        ];
-
-        setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
+        // Don't fallback to mock data - keep empty state
+        setNotifications([]);
+        setUnreadCount(0);
       }
     };
 

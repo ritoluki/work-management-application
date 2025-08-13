@@ -994,6 +994,8 @@ const WorkManagement = ({ user, onLogout }) => {
         </div>
       )}
 
+      
+
       <div className={`flex relative ${searchFilter ? 'h-[calc(100vh-120px)]' : 'h-screen'}`}>
         {/* Sidebar */}
         <aside className={`transition-all duration-200 ${sidebarCollapsed ? 'w-16' : 'w-72'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-600 h-full flex flex-col`}>

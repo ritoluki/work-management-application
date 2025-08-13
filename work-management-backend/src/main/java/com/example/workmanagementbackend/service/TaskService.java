@@ -8,6 +8,7 @@ import com.example.workmanagementbackend.repository.GroupRepository;
 import com.example.workmanagementbackend.repository.UserRepository;
 import com.example.workmanagementbackend.dto.TaskDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,9 @@ public class TaskService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public List<TaskDTO> getAllTasks() {
         List<Task> tasks = taskRepository.findAll();
@@ -98,6 +102,22 @@ public class TaskService {
         }
 
         Task savedTask = taskRepository.save(task);
+        
+        // Publish event for task assignment notification
+        if (savedTask.getAssignedTo() != null) {
+            try {
+                eventPublisher.publishEvent(new com.example.workmanagementbackend.event.TaskNotificationEvent(
+                    this,
+                    savedTask.getId(),
+                    savedTask.getAssignedTo().getId(),
+                    com.example.workmanagementbackend.entity.Notification.NotificationType.TASK_ASSIGNED,
+                    savedTask.getCreatedBy().getId()
+                ));
+            } catch (Exception e) {
+                System.err.println("Failed to publish task assignment notification event: " + e.getMessage());
+            }
+        }
+        
         return convertToDTO(savedTask);
     }
 
@@ -154,6 +174,22 @@ public class TaskService {
         }
 
         Task savedTask = taskRepository.save(task);
+        
+        // Publish event for task update notification
+        if (savedTask.getAssignedTo() != null) {
+            try {
+                eventPublisher.publishEvent(new com.example.workmanagementbackend.event.TaskNotificationEvent(
+                    this,
+                    savedTask.getId(),
+                    savedTask.getAssignedTo().getId(),
+                    com.example.workmanagementbackend.entity.Notification.NotificationType.TASK_UPDATED,
+                    savedTask.getCreatedBy().getId()
+                ));
+            } catch (Exception e) {
+                System.err.println("Failed to publish task update notification event: " + e.getMessage());
+            }
+        }
+        
         return convertToDTO(savedTask);
     }
 
@@ -166,6 +202,20 @@ public class TaskService {
         
         task.setAssignedTo(user);
         Task savedTask = taskRepository.save(task);
+        
+        // Publish event for task assignment notification
+        try {
+            eventPublisher.publishEvent(new com.example.workmanagementbackend.event.TaskNotificationEvent(
+                this,
+                savedTask.getId(),
+                savedTask.getAssignedTo().getId(),
+                com.example.workmanagementbackend.entity.Notification.NotificationType.TASK_ASSIGNED,
+                savedTask.getCreatedBy().getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to publish task assignment notification event: " + e.getMessage());
+        }
+        
         return convertToDTO(savedTask);
     }
 

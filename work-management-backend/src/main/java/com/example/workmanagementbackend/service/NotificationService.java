@@ -3,8 +3,11 @@ package com.example.workmanagementbackend.service;
 import com.example.workmanagementbackend.dto.NotificationDTO;
 import com.example.workmanagementbackend.entity.Notification;
 import com.example.workmanagementbackend.repository.NotificationRepository;
+import com.example.workmanagementbackend.event.TaskNotificationEvent;
+// Removed service imports to avoid circular dependency
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -24,10 +27,11 @@ public class NotificationService {
     
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final TaskService taskService;
-    private final GroupService groupService;
-    private final BoardService boardService;
-    private final WorkspaceService workspaceService;
+    // Temporarily remove these dependencies to avoid circular dependency
+    // private final TaskService taskService;
+    // private final GroupService groupService;
+    // private final BoardService boardService;
+    // private final WorkspaceService workspaceService;
     
     /**
      * Send a real-time notification to a specific user
@@ -272,27 +276,18 @@ public class NotificationService {
     
     /**
      * Get task location information (workspace, board, group)
+     * Temporarily simplified to avoid circular dependency
      */
     private TaskLocationInfo getTaskLocationInfo(Long taskId) {
-        try {
-            // Get task first to get group ID
-            var task = taskService.getTaskById(taskId);
-            var group = groupService.getGroupById(task.getGroupId());
-            var board = boardService.getBoardById(group.getBoardId());
-            var workspace = workspaceService.getWorkspaceById(board.getWorkspaceId());
-            
-            return new TaskLocationInfo(
-                task.getName(),
-                task.getDueDate(),
-                workspace.getName(),
-                board.getName(),
-                group.getName(),
-                "Admin" // assignedBy - we'll need to enhance this later
-            );
-        } catch (Exception e) {
-            log.error("Error getting task location info for task {}: {}", taskId, e.getMessage());
-            return new TaskLocationInfo("Unknown Task", null, "Unknown Workspace", "Unknown Board", "Unknown Group", "Admin");
-        }
+        // For now, return basic info to avoid circular dependency
+        return new TaskLocationInfo(
+            "Task " + taskId,
+            null,
+            "Workspace",
+            "Board", 
+            "Group",
+            "Admin"
+        );
     }
     
     /**
@@ -467,6 +462,84 @@ public class NotificationService {
                     boardName,
                     groupName
                 );
+        }
+    }
+    
+    /**
+     * Event listener for task notification events
+     * This breaks the circular dependency by listening to events instead of direct calls
+     */
+    @EventListener
+    public void handleTaskNotificationEvent(TaskNotificationEvent event) {
+        try {
+            log.info("Received task notification event: taskId={}, userId={}, type={}", 
+                event.getTaskId(), event.getUserId(), event.getNotificationType());
+            
+            // Get task details
+            String taskName = "Unknown Task";
+            String dueDate = null;
+            String workspaceName = "Unknown Workspace";
+            String boardName = "Unknown Board";
+            String groupName = "Unknown Group";
+            String assignedBy = "Unknown User";
+            
+            // Simplified approach to avoid circular dependency
+            taskName = "Task " + event.getTaskId();
+            dueDate = null;
+            groupName = "Group";
+            boardName = "Board";
+            workspaceName = "Workspace";
+            assignedBy = "User " + event.getCreatedById();
+            
+            // Create and send notification
+            NotificationDTO notificationDTO = new NotificationDTO();
+            notificationDTO.setUserId(event.getUserId());
+            notificationDTO.setType(event.getNotificationType());
+            notificationDTO.setTitle(getNotificationTitle(event.getNotificationType()));
+            notificationDTO.setMessage(createDetailedTaskMessage(
+                event.getNotificationType(),
+                taskName,
+                dueDate,
+                workspaceName,
+                boardName,
+                groupName,
+                assignedBy
+            ));
+            notificationDTO.setMetadata(String.format(
+                "{\"taskId\":\"%d\",\"taskName\":\"%s\",\"dueDate\":\"%s\",\"workspaceName\":\"%s\",\"boardName\":\"%s\",\"groupName\":\"%s\",\"assignedBy\":\"%s\"}",
+                event.getTaskId(),
+                taskName != null ? taskName : "",
+                dueDate != null ? dueDate : "",
+                workspaceName != null ? workspaceName : "",
+                boardName != null ? boardName : "",
+                groupName != null ? groupName : "",
+                assignedBy != null ? assignedBy : ""
+            ));
+            notificationDTO.setIsRead(false);
+            notificationDTO.setCreatedAt(LocalDateTime.now());
+            
+            sendNotification(notificationDTO);
+            
+        } catch (Exception e) {
+            log.error("Error handling task notification event: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Get notification title based on type
+     */
+    private String getNotificationTitle(Notification.NotificationType type) {
+        switch (type) {
+            case TASK_ASSIGNED:
+                return "Task được giao";
+            case TASK_UPDATED:
+                return "Task được cập nhật";
+            case TASK_COMPLETED:
+                return "Task hoàn thành";
+            case DEADLINE_WARNING:
+                return "Cảnh báo deadline";
+            default:
+                return "Thông báo task";
         }
     }
 }
