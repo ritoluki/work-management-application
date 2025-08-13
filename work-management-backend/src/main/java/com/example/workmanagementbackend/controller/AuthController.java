@@ -60,12 +60,12 @@ public class AuthController {
             );
 
             if (success) {
-                return ResponseEntity.ok("Password changed successfully");
+                return ResponseEntity.ok("Thay đổi mật khẩu thành công");
             } else {
-                return ResponseEntity.badRequest().body("Current password is incorrect");
+                return ResponseEntity.badRequest().body("Mật khẩu hiện tại không đúng");
             }
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to change password: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Lỗi khi thay đổi mật khẩu: " + e.getMessage());
         }
     }
 
