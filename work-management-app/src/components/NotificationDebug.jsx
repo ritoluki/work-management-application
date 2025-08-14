@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '../context/NotificationContext';
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+
 const NotificationDebug = ({ user }) => {
   const [debugInfo, setDebugInfo] = useState({});
   const [loading, setLoading] = useState(false);
@@ -10,15 +13,15 @@ const NotificationDebug = ({ user }) => {
     setLoading(true);
     try {
       // Test basic API
-      const testResponse = await fetch('http://localhost:8080/api/notifications/test');
+      const testResponse = await fetch(`${API_BASE_URL}/notifications/test`);
       const testResult = await testResponse.json();
       
       // Test unread notifications
-      const unreadResponse = await fetch(`http://localhost:8080/api/notifications/user/${user?.id}/unread`);
+      const unreadResponse = await fetch(`${API_BASE_URL}/notifications/user/${user?.id}/unread`);
       const unreadResult = await unreadResponse.json();
       
       // Test unread count
-      const countResponse = await fetch(`http://localhost:8080/api/notifications/user/${user?.id}/unread-count`);
+      const countResponse = await fetch(`${API_BASE_URL}/notifications/user/${user?.id}/unread-count`);
       const countResult = await countResponse.json();
       
       setDebugInfo({
@@ -47,7 +50,7 @@ const NotificationDebug = ({ user }) => {
 
   const sendTestNotification = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/notifications/test', {
+      const response = await fetch(`${API_BASE_URL}/notifications/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

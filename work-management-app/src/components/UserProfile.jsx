@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { User, Mail, Calendar, Edit2, Save, X, Camera, Lock, Settings, Phone, MapPin, Briefcase, Building } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 import { getRoleBadge, getRoleIcon } from '../utils/mockUsers';
 import { generateAvatar, getUserAvatar, getUserDisplayName } from '../utils/avatarUtils';
 
@@ -32,7 +34,7 @@ const UserProfile = ({ user, onClose, onUpdateUser }) => {
 
     try {
       // Call API to update user information
-      const response = await fetch(`http://localhost:8080/api/users/${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -108,7 +110,7 @@ const UserProfile = ({ user, onClose, onUpdateUser }) => {
 
     try {
       // Call API to change password
-      const response = await fetch(`http://localhost:8080/api/auth/change-password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

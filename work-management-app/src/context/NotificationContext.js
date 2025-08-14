@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+const WS_URL = process.env.REACT_APP_WS_URL || 'http://localhost:8080/ws';
+
 const NotificationContext = createContext();
 
 export const useNotification = () => {
@@ -84,7 +88,7 @@ export const NotificationProvider = ({ children, user }) => {
       try {
         // Create STOMP client with SockJS
         const client = new Client({
-          webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+          webSocketFactory: () => new SockJS(WS_URL),
           connectHeaders: {
             userId: user.id.toString()
           },
@@ -184,7 +188,7 @@ export const NotificationProvider = ({ children, user }) => {
     const loadNotifications = async () => {
       try {
         console.log('Loading notifications for user:', user.id);
-        const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread`);
+        const response = await fetch(`${API_BASE_URL}/notifications/user/${user.id}/unread`);
         console.log('Response status:', response.status);
         console.log('Response ok:', response.ok);
         
@@ -229,7 +233,7 @@ export const NotificationProvider = ({ children, user }) => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/notifications/${notificationId}/read?userId=${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read?userId=${user.id}`, {
         method: 'PUT'
       });
       
@@ -259,7 +263,7 @@ export const NotificationProvider = ({ children, user }) => {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/mark-all-read`, {
+      const response = await fetch(`${API_BASE_URL}/notifications/user/${user.id}/mark-all-read`, {
         method: 'PUT'
       });
       
@@ -281,7 +285,7 @@ export const NotificationProvider = ({ children, user }) => {
 
   const clearAll = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/notifications/user/${user.id}`, {
         method: 'DELETE'
       });
       

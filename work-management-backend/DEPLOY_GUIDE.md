@@ -33,13 +33,13 @@ Trong phần Environment Variables, thêm:
 
 ```
 SPRING_PROFILES_ACTIVE=prod
-DATABASE_URL=postgresql://workuser:password@host:port/work_management_db
+DATABASE_URL=postgresql://workuser:3EUKYPqSa4PH2cE5tcLvcOqt8M8kr8ar@dpg-d2ek3i2dbo4c738hcpv0-a/work_management_5g47
 DB_USERNAME=workuser
-DB_PASSWORD=your_db_password
+DB_PASSWORD=3EUKYPqSa4PH2cE5tcLvcOqt8M8kr8ar
 FRONTEND_URL=https://your-frontend-app.onrender.com
 ```
 
-**Lưu ý:** Thay thế các giá trị database bằng thông tin thực từ Database đã tạo.
+**Lưu ý:** Cập nhật `FRONTEND_URL` với domain thực tế của frontend app khi deploy.
 
 ## Cấu hình Database Connection
 

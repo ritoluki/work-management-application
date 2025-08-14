@@ -103,13 +103,38 @@ public class DataInitializer implements CommandLineRunner {
     private Task createTask(String name, String status, LocalDate dueDate, String timeline, String notes, String priority, Group group, User createdBy) {
         Task task = new Task();
         task.setName(name);
-        task.setStatus(Task.TaskStatus.valueOf(status));
+        task.setStatus(parseStatus(status));
         task.setDueDate(dueDate);
         task.setTimeline(timeline);
         task.setNotes(notes);
-        task.setPriority(Task.TaskPriority.valueOf(priority));
+        task.setPriority(parsePriority(priority));
         task.setGroup(group);
         task.setCreatedBy(createdBy);
         return taskRepository.save(task);
+    }
+
+    private Task.TaskStatus parseStatus(String status) {
+        if (status == null) return Task.TaskStatus.TODO;
+        String normalized = status.trim().toUpperCase().replace('-', '_').replace(' ', '_');
+        if ("TO_DO".equals(normalized)) normalized = "TODO";
+        if ("WORKING".equals(normalized) || "WORKING_ON".equals(normalized) || "IN_PROGRESS".equals(normalized)) {
+            normalized = "WORKING_ON_IT";
+        }
+        try {
+            return Task.TaskStatus.valueOf(normalized);
+        } catch (IllegalArgumentException ex) {
+            return Task.TaskStatus.TODO;
+        }
+    }
+
+    private Task.TaskPriority parsePriority(String priority) {
+        if (priority == null) return Task.TaskPriority.NORMAL;
+        String normalized = priority.trim().toUpperCase();
+        if ("MEDIUM".equals(normalized)) normalized = "NORMAL";
+        try {
+            return Task.TaskPriority.valueOf(normalized);
+        } catch (IllegalArgumentException ex) {
+            return Task.TaskPriority.NORMAL;
+        }
     }
 }
