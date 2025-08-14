@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { User, Mail, Calendar, Edit2, Save, X, Camera, Lock, Settings, Phone, MapPin, Briefcase, Building } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 import { getRoleBadge, getRoleIcon } from '../utils/mockUsers';
 import { generateAvatar, getUserAvatar, getUserDisplayName } from '../utils/avatarUtils';
+
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
 const UserProfile = ({ user, onClose, onUpdateUser }) => {
   const [isEditing, setIsEditing] = useState(false);
