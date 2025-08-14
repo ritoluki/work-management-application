@@ -10,6 +10,7 @@ import com.example.workmanagementbackend.dto.TaskDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ public class TaskService {
 
 
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> getAllTasks() {
         List<Task> tasks = taskRepository.findAll();
         return tasks.stream()
@@ -34,6 +36,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> getTasksByGroupId(Long groupId) {
         List<Task> tasks = taskRepository.findByGroupId(groupId);
         return tasks.stream()
@@ -41,6 +44,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> getTasksByBoardId(Long boardId) {
         List<Task> tasks = taskRepository.findByGroupBoardId(boardId);
         return tasks.stream()
@@ -48,6 +52,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public TaskDTO getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));

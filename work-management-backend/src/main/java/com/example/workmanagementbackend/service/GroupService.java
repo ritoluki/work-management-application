@@ -30,6 +30,7 @@ public class GroupService {
     @Autowired
     private TaskRepository taskRepository;
 
+    @Transactional(readOnly = true)
     public List<GroupDTO> getGroupsByBoardId(Long boardId) {
         List<Group> groups = groupRepository.findByBoardIdAndIsArchivedFalseOrderBySortOrderAsc(boardId);
         return groups.stream()
@@ -37,6 +38,7 @@ public class GroupService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public GroupDTO getGroupById(Long id) {
         Group group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
