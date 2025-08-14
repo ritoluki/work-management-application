@@ -34,6 +34,7 @@ public class BoardService {
     @Autowired
     private TaskRepository taskRepository;
 
+    @Transactional(readOnly = true)
     public List<BoardDTO> getBoardsByWorkspaceId(Long workspaceId) {
         List<Board> boards = boardRepository.findByWorkspaceIdAndIsArchivedFalse(workspaceId);
         return boards.stream()
@@ -41,6 +42,7 @@ public class BoardService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public BoardDTO getBoardById(Long id) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Board not found"));
