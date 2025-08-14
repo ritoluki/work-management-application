@@ -34,6 +34,7 @@ public class WorkspaceService {
     @Autowired
     private TaskRepository taskRepository;
 
+    @Transactional(readOnly = true)
     public List<WorkspaceDTO> getAllWorkspaces() {
         List<Workspace> workspaces = workspaceRepository.findByIsArchivedFalse();
         return workspaces.stream()
@@ -41,6 +42,7 @@ public class WorkspaceService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public WorkspaceDTO getWorkspaceById(Long id) {
         Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
