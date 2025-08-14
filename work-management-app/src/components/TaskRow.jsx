@@ -59,11 +59,16 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
   const buttonRef = useRef(null);
 
   useEffect(() => {
-    const { timelineStart, timelineEnd } = parseTimeline(task.timeline);
+    const { timelineStart, timelineEnd } = parseTimeline(task.timeline || '');
     setEditedTask(prev => ({
       ...task,
-      timelineStart,
-      timelineEnd
+      name: task.name || '',
+      notes: task.notes || '',
+      priority: task.priority || 'NORMAL',
+      status: task.status || 'TODO',
+      dueDate: task.dueDate || '',
+      timelineStart: timelineStart || '',
+      timelineEnd: timelineEnd || ''
     }));
   }, [task]);
 
@@ -190,16 +195,16 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
         <input 
           type="checkbox" 
           className="rounded border-gray-300"
-          checked={isEditing ? editedTask.status === 'DONE' : task.status === 'DONE'}
+          checked={isEditing ? ((editedTask.status || 'TODO') === 'DONE') : ((task.status || 'TODO') === 'DONE')}
           disabled={!isEditing}
-          onChange={() => isEditing && handleStatusChange(editedTask.status === 'DONE' ? 'TODO' : 'DONE')}
+          onChange={() => isEditing && handleStatusChange(((editedTask.status || 'TODO') === 'DONE') ? 'TODO' : 'DONE')}
         />
       </td>
       <td className="py-3 px-4 w-64 text-center">
         {isEditing ? (
-                      <input
+              <input
               type="text"
-              value={editedTask.name}
+              value={editedTask.name ?? ''}
               onChange={(e) => setEditedTask({...editedTask, name: e.target.value})}
               className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-center"
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -226,9 +231,9 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
               <button
                 ref={buttonRef}
                 onClick={handleDropdownToggle}
-                className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(editedTask.status)} hover:opacity-80 cursor-pointer`}
+                className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(editedTask.status || 'TODO')} hover:opacity-80 cursor-pointer`}
               >
-                {getStatusLabel(editedTask.status)}
+                {getStatusLabel(editedTask.status || 'TODO')}
               </button>
             ) : (
               <span className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(task.status)}`}>
@@ -265,7 +270,7 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
         {isEditing ? (
           <input
             type="date"
-            value={editedTask.dueDate}
+            value={editedTask.dueDate || ''}
             onChange={(e) => setEditedTask({...editedTask, dueDate: e.target.value})}
             className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           />
@@ -283,14 +288,14 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
       <td className="py-3 px-4 w-28 text-center">
         {isEditing ? (
           <div className="flex flex-col gap-1">
-            <input
+              <input
               type="date"
               value={editedTask.timelineStart || ''}
               onChange={(e) => setEditedTask({...editedTask, timelineStart: e.target.value})}
               className="w-full px-1 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-xs focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               placeholder="Start"
             />
-            <input
+              <input
               type="date"
               value={editedTask.timelineEnd || ''}
               onChange={(e) => setEditedTask({...editedTask, timelineEnd: e.target.value})}
@@ -306,9 +311,9 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
       </td>
       <td className="py-3 px-4 w-40 text-center">
         {isEditing ? (
-                      <input
+              <input
               type="text"
-              value={editedTask.notes}
+              value={editedTask.notes ?? ''}
               onChange={(e) => setEditedTask({...editedTask, notes: e.target.value})}
               className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-center"
               placeholder="Add notes..."
@@ -327,7 +332,7 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
       <td className="py-3 px-4 w-24 text-center">
         {isEditing ? (
           <select
-            value={editedTask.priority}
+            value={editedTask.priority || 'NORMAL'}
             onChange={(e) => setEditedTask({...editedTask, priority: e.target.value})}
             className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >

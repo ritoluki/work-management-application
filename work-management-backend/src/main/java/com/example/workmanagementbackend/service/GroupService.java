@@ -45,6 +45,7 @@ public class GroupService {
         return convertToDTO(group);
     }
 
+    @Transactional
     public GroupDTO createGroup(GroupDTO groupDTO) {
         Board board = boardRepository.findById(groupDTO.getBoardId())
                 .orElseThrow(() -> new RuntimeException("Board not found"));
@@ -64,6 +65,7 @@ public class GroupService {
         return convertToDTO(savedGroup);
     }
 
+    @Transactional
     public GroupDTO updateGroup(Long id, GroupDTO groupDTO) {
         Group group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
@@ -98,9 +100,16 @@ public class GroupService {
         dto.setColor(group.getColor());
         dto.setSortOrder(group.getSortOrder());
         dto.setIsArchived(group.getIsArchived());
-        dto.setBoardId(group.getBoard().getId());
-        dto.setCreatedById(group.getCreatedBy().getId());
-        dto.setCreatedByName(group.getCreatedBy().getFirstName() + " " + group.getCreatedBy().getLastName());
+        if (group.getBoard() != null) {
+            dto.setBoardId(group.getBoard().getId());
+        }
+        if (group.getCreatedBy() != null) {
+            dto.setCreatedById(group.getCreatedBy().getId());
+            String first = null, last = null;
+            try { first = group.getCreatedBy().getFirstName(); } catch (Exception ignore) {}
+            try { last = group.getCreatedBy().getLastName(); } catch (Exception ignore) {}
+            dto.setCreatedByName(((first != null ? first : "").trim() + " " + (last != null ? last : "").trim()).trim());
+        }
         dto.setCreatedAt(group.getCreatedAt());
         dto.setUpdatedAt(group.getUpdatedAt());
         return dto;

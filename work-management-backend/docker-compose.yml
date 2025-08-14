@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wm_postgres
+    environment:
+      POSTGRES_DB: work_management_db
+      POSTGRES_USER: work
+      POSTGRES_PASSWORD: workpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U work -d work_management_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    container_name: wm_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/work_management_db?sslmode=disable
+      DB_USERNAME: work
+      DB_PASSWORD: workpass
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
+

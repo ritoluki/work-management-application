@@ -43,31 +43,21 @@ public class NotificationService {
     @Transactional
     public NotificationDTO sendNotification(NotificationDTO notificationDTO) {
         try {
-            // Save notification to database
-            Notification notification = mapToEntity(notificationDTO);
-            Notification savedNotification = notificationRepository.save(notification);
-            
-            NotificationDTO result = mapToDTO(savedNotification);
-            
-            // Send real-time notification via WebSocket  
-            String notificationDestination = "/topic/notifications/" + notificationDTO.getUserId();
-            log.info("Sending WebSocket notification to {}: {}", notificationDestination, result.getTitle());
-            messagingTemplate.convertAndSend(notificationDestination, result);
-            
-            // Send updated unread count
-            Long unreadCount = getUnreadCount(notificationDTO.getUserId());
-            Map<String, Object> unreadCountMessage = Map.of("count", unreadCount);
-            String countDestination = "/topic/unread-count/" + notificationDTO.getUserId();
-            log.info("Sending WebSocket unread count to {}: {}", countDestination, unreadCountMessage);
-            messagingTemplate.convertAndSend(countDestination, unreadCountMessage);
-            
-            log.info("Notification sent to user {}: {} (unread count: {})", 
-                notificationDTO.getUserId(), notificationDTO.getTitle(), unreadCount);
+            Notification saved = notificationRepository.save(mapToEntity(notificationDTO));
+            NotificationDTO result = mapToDTO(saved);
+            try {
+                String destination = "/topic/notifications/" + notificationDTO.getUserId();
+                messagingTemplate.convertAndSend(destination, result);
+                Long unread = getUnreadCount(notificationDTO.getUserId());
+                messagingTemplate.convertAndSend("/topic/unread-count/" + notificationDTO.getUserId(), Map.of("count", unread));
+            } catch (Exception wsError) {
+                log.warn("WebSocket send failed: {}", wsError.getMessage());
+            }
             return result;
-            
         } catch (Exception e) {
-            log.error("Failed to send notification to user {}: {}", notificationDTO.getUserId(), e.getMessage());
-            throw e;
+            log.error("Persisting notification failed: {}", e.getMessage());
+            // Do not break main flow
+            return notificationDTO;
         }
     }
     
@@ -250,7 +240,7 @@ public class NotificationService {
                 return sendNotification(baseNotification);
             }
         } catch (Exception e) {
-            log.error("Failed to send enhanced task notification", e);
+            log.error("Failed to build enhanced task notification: {}", e.getMessage());
             
             // Fallback to basic notification
             NotificationDTO baseNotification = new NotificationDTO();

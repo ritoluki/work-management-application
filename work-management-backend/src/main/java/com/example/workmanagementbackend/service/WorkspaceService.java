@@ -49,6 +49,7 @@ public class WorkspaceService {
         return convertToDTO(workspace);
     }
 
+    @Transactional
     public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO) {
         User owner = userRepository.findById(workspaceDTO.getOwnerId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -63,6 +64,7 @@ public class WorkspaceService {
         return convertToDTO(savedWorkspace);
     }
 
+    @Transactional
     public WorkspaceDTO updateWorkspace(Long id, WorkspaceDTO workspaceDTO) {
         Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
@@ -94,8 +96,13 @@ public class WorkspaceService {
         dto.setId(workspace.getId());
         dto.setName(workspace.getName());
         dto.setDescription(workspace.getDescription());
-        dto.setOwnerId(workspace.getOwner().getId());
-        dto.setOwnerName(workspace.getOwner().getFirstName() + " " + workspace.getOwner().getLastName());
+        if (workspace.getOwner() != null) {
+            dto.setOwnerId(workspace.getOwner().getId());
+            String first = null, last = null;
+            try { first = workspace.getOwner().getFirstName(); } catch (Exception ignore) {}
+            try { last = workspace.getOwner().getLastName(); } catch (Exception ignore) {}
+            dto.setOwnerName(((first != null ? first : "").trim() + " " + (last != null ? last : "").trim()).trim());
+        }
         dto.setIsArchived(workspace.getIsArchived());
         dto.setCreatedAt(workspace.getCreatedAt());
         dto.setUpdatedAt(workspace.getUpdatedAt());

@@ -183,138 +183,51 @@ public class TaskController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO, @RequestParam Long currentUserId) {
-        try {
-            // Check permission - MANAGER+ can edit any task, MEMBER can only edit assigned tasks
-            if (!permissionService.canEditTask(currentUserId, id)) {
-                System.err.println("User " + currentUserId + " does not have permission to edit task " + id);
-                return ResponseEntity.status(403).build(); // Forbidden
-            }
-            
-            System.out.println("Updating task with ID: " + id);
-            System.out.println("TaskDTO: " + taskDTO);
-            
-            // Get old task to check status changes
-            TaskDTO oldTask = taskService.getTaskById(id);
-            
-            // Update task
-            TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
-            System.out.println("Updated task assigned to ID: " + updatedTask.getAssignedToId());
-            
-            // Check if task status changed to DONE
-            boolean taskCompleted = !"DONE".equals(oldTask.getStatus()) && "DONE".equals(updatedTask.getStatus());
-            
-            // Send notification if task has assigned user OR creator
-            Long notificationUserId = null;
-            if (updatedTask.getAssignedToId() != null) {
-                notificationUserId = updatedTask.getAssignedToId();
-                System.out.println("Sending notification to assigned user: " + notificationUserId);
-            } else if (updatedTask.getCreatedById() != null) {
-                notificationUserId = updatedTask.getCreatedById();
-                System.out.println("Sending notification to task creator: " + notificationUserId);
-            }
-            
-            if (notificationUserId != null) {
-                System.out.println("Sending notification for task update...");
-                
-                // Different notification types based on completion status
-                Notification.NotificationType notificationType;
-                if (taskCompleted) {
-                    notificationType = Notification.NotificationType.TASK_COMPLETED;
-                    System.out.println("Sending TASK_COMPLETED notification");
-                } else {
-                    notificationType = Notification.NotificationType.TASK_UPDATED;
-                    System.out.println("Sending TASK_UPDATED notification");
-                }
-                
-                // Use enhanced notification method
-                try {
-                    notificationService.sendEnhancedTaskNotification(
-                        updatedTask.getId(),
-                        notificationUserId, 
-                        notificationType,
-                        currentUserId
-                    );
-                    System.out.println("Enhanced notification sent successfully!");
-                } catch (Exception notificationError) {
-                    System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
-                    
-                    // Fallback to basic notification
-                    NotificationDTO notification = new NotificationDTO();
-                    notification.setUserId(notificationUserId);
-                    notification.setType(notificationType);
-                    
-                    if (taskCompleted) {
-                        notification.setTitle("Task hoàn thành");
-                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được hoàn thành! 🎉");
-                    } else {
-                        notification.setTitle("Task được cập nhật");
-                        notification.setMessage("Task \"" + updatedTask.getName() + "\" đã được cập nhật");
-                    }
-                    
-                    notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
-                    notification.setRelatedEntityId(updatedTask.getId());
-                    notification.setCreatedById(currentUserId);
-                    
-                    notificationService.sendNotification(notification);
-                }
-            } else {
-                System.out.println("No assigned user or creator - skipping notification");
-            }
-            
-            return ResponseEntity.ok(updatedTask);
-        } catch (Exception e) {
-            System.err.println("Error updating task: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+        // 1) Permission check
+        if (!permissionService.canEditTask(currentUserId, id)) {
+            System.err.println("User " + currentUserId + " does not have permission to edit task " + id);
+            return ResponseEntity.status(403).build();
         }
+
+        // 2) Update task first; never fail response because of side-effects later
+        TaskDTO oldTask = taskService.getTaskById(id);
+        TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
+
+        // 3) Fire-and-forget notifications; isolate errors
+        try {
+            boolean taskCompleted = !"DONE".equals(oldTask.getStatus()) && "DONE".equals(updatedTask.getStatus());
+            Long notificationUserId = updatedTask.getAssignedToId() != null
+                    ? updatedTask.getAssignedToId()
+                    : updatedTask.getCreatedById();
+            if (notificationUserId != null) {
+                Notification.NotificationType type = taskCompleted
+                        ? Notification.NotificationType.TASK_COMPLETED
+                        : Notification.NotificationType.TASK_UPDATED;
+                notificationService.sendEnhancedTaskNotification(
+                        updatedTask.getId(), notificationUserId, type, currentUserId);
+            }
+        } catch (Exception ignore) {
+            System.err.println("Notification step failed but update succeeded");
+        }
+
+        return ResponseEntity.ok(updatedTask);
     }
 
     @PutMapping("/{taskId}/assign/{userId}")
     public ResponseEntity<TaskDTO> assignTask(@PathVariable Long taskId, @PathVariable Long userId, @RequestParam Long currentUserId) {
-        try {
-            // Check permission - only MANAGER+ can assign tasks
-            if (!permissionService.canAssignTask(currentUserId)) {
-                System.err.println("User " + currentUserId + " does not have permission to assign tasks");
-                return ResponseEntity.status(403).build(); // Forbidden
-            }
-            
-            System.out.println("Assigning task " + taskId + " to user " + userId);
-            TaskDTO assignedTask = taskService.assignTask(taskId, userId);
-            
-            // Send notification to assigned user
-            System.out.println("Sending assignment notification to user " + userId);
-            
-            // Use enhanced notification method
-            try {
-                notificationService.sendEnhancedTaskNotification(
-                    assignedTask.getId(),
-                    userId, 
-                    Notification.NotificationType.TASK_ASSIGNED,
-                    currentUserId
-                );
-                System.out.println("Enhanced assignment notification sent successfully!");
-            } catch (Exception notificationError) {
-                System.err.println("Failed to send enhanced notification, falling back to basic notification: " + notificationError.getMessage());
-                
-                // Fallback to basic notification
-                NotificationDTO notification = new NotificationDTO();
-                notification.setUserId(userId);
-                notification.setType(Notification.NotificationType.TASK_ASSIGNED);
-                notification.setTitle("Task được giao");
-                notification.setMessage("Bạn đã được giao task \"" + assignedTask.getName() + "\"");
-                notification.setRelatedEntityType(Notification.RelatedEntityType.TASK);
-                notification.setRelatedEntityId(assignedTask.getId());
-                notification.setCreatedById(currentUserId);
-                
-                notificationService.sendNotification(notification);
-            }
-            
-            return ResponseEntity.ok(assignedTask);
-        } catch (Exception e) {
-            System.err.println("Error assigning task: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+        // Permission check
+        if (!permissionService.canAssignTask(currentUserId)) {
+            System.err.println("User " + currentUserId + " does not have permission to assign tasks");
+            return ResponseEntity.status(403).build();
         }
+        TaskDTO assignedTask = taskService.assignTask(taskId, userId);
+        try {
+            notificationService.sendEnhancedTaskNotification(
+                    assignedTask.getId(), userId, Notification.NotificationType.TASK_ASSIGNED, currentUserId);
+        } catch (Exception ignore) {
+            System.err.println("Notification step failed but assignment succeeded");
+        }
+        return ResponseEntity.ok(assignedTask);
     }
 
     @DeleteMapping("/{id}")

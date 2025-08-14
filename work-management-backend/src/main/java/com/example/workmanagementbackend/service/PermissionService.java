@@ -5,6 +5,7 @@ import com.example.workmanagementbackend.entity.Task;
 import com.example.workmanagementbackend.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
@@ -40,6 +41,7 @@ public class PermissionService {
      * OWNER, ADMIN, MANAGER can edit any task
      * MEMBER can only edit tasks assigned to them
      */
+    @Transactional(readOnly = true)
     public boolean canEditTask(Long userId, Long taskId) {
         try {
             Optional<User> userOpt = userService.getUserById(userId);
@@ -76,6 +78,7 @@ public class PermissionService {
      * OWNER, ADMIN, MANAGER can delete any task
      * MEMBER can only delete tasks they created
      */
+    @Transactional(readOnly = true)
     public boolean canDeleteTask(Long userId, Long taskId) {
         try {
             Optional<User> userOpt = userService.getUserById(userId);

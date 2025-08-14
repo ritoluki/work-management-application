@@ -2,6 +2,9 @@ package com.example.workmanagementbackend.config;
 
 import com.example.workmanagementbackend.entity.*;
 import com.example.workmanagementbackend.repository.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -25,12 +28,17 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private TaskRepository taskRepository;
 
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Value("${app.seed-data:false}")
+    private boolean seedData;
+
     @Override
     public void run(String... args) throws Exception {
-        // Chỉ tạo dữ liệu nếu chưa có
-        if (userRepository.count() == 0) {
-            createSampleData();
-        }
+        // Chỉ seed khi được bật bằng cấu hình, và DB đang trống
+        if (!seedData) return;
+        if (userRepository.count() > 0) return;
+        createSampleData();
     }
 
     private void createSampleData() {
@@ -60,7 +68,8 @@ public class DataInitializer implements CommandLineRunner {
     private User createUser(String email, String firstName, String lastName, String description, User.UserRole role) {
         User user = new User();
         user.setEmail(email);
-        user.setPasswordHash("$2a$10$dummy"); // Trong thực tế sẽ hash password
+        // Demo password for seeded accounts: 123456
+        user.setPasswordHash(passwordEncoder.encode("123456"));
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setDescription(description);

@@ -8,13 +8,13 @@ import java.util.List;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
-    @EntityGraph(attributePaths = {"group", "createdBy", "assignedTo"})
+    @EntityGraph(attributePaths = {"group", "group.board", "createdBy", "assignedTo"})
     List<Task> findByGroupId(Long groupId);
 
-    @EntityGraph(attributePaths = {"group", "createdBy", "assignedTo"})
+    @EntityGraph(attributePaths = {"group", "group.board", "createdBy", "assignedTo"})
     List<Task> findByGroupBoardId(Long boardId);
 
-    @EntityGraph(attributePaths = {"group", "createdBy", "assignedTo"})
+    @EntityGraph(attributePaths = {"group", "group.board", "createdBy", "assignedTo"})
     List<Task> findByAssignedToId(Long userId);
     void deleteByGroupId(Long groupId);
 }

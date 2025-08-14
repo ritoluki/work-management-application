@@ -49,6 +49,7 @@ public class BoardService {
         return convertToDTO(board);
     }
 
+    @Transactional
     public BoardDTO createBoard(BoardDTO boardDTO) {
         Workspace workspace = workspaceRepository.findById(boardDTO.getWorkspaceId())
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
@@ -68,6 +69,7 @@ public class BoardService {
         return convertToDTO(savedBoard);
     }
 
+    @Transactional
     public BoardDTO updateBoard(Long id, BoardDTO boardDTO) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Board not found"));
@@ -102,9 +104,16 @@ public class BoardService {
         dto.setDescription(board.getDescription());
         dto.setColor(board.getColor());
         dto.setIsArchived(board.getIsArchived());
-        dto.setWorkspaceId(board.getWorkspace().getId());
-        dto.setCreatedById(board.getCreatedBy().getId());
-        dto.setCreatedByName(board.getCreatedBy().getFirstName() + " " + board.getCreatedBy().getLastName());
+        if (board.getWorkspace() != null) {
+            dto.setWorkspaceId(board.getWorkspace().getId());
+        }
+        if (board.getCreatedBy() != null) {
+            dto.setCreatedById(board.getCreatedBy().getId());
+            String first = null, last = null;
+            try { first = board.getCreatedBy().getFirstName(); } catch (Exception ignore) {}
+            try { last = board.getCreatedBy().getLastName(); } catch (Exception ignore) {}
+            dto.setCreatedByName(((first != null ? first : "").trim() + " " + (last != null ? last : "").trim()).trim());
+        }
         dto.setCreatedAt(board.getCreatedAt());
         dto.setUpdatedAt(board.getUpdatedAt());
         return dto;
