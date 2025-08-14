@@ -225,9 +225,16 @@ const NotificationDropdown = ({ onNavigateToTask }) => {
                         {/* Read Status and Navigate Icon */}
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {notification.taskDetails && (
-                            <div className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Click để xem task">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationClick(notification);
+                              }}
+                              className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                              title="Click để xem task"
+                            >
                               <ExternalLink className="w-3 h-3" />
-                            </div>
+                            </button>
                           )}
                           
                           {!notification.isRead && (

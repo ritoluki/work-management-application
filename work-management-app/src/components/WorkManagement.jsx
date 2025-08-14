@@ -824,29 +824,48 @@ const WorkManagement = ({ user, onLogout }) => {
 
   // Xử lý điều hướng đến task từ thông báo
   const handleNavigateToTask = async (navigationData) => {
-    if (!navigationData) return;
+    if (!navigationData) {
+      console.warn('Navigation data is null or undefined');
+      return;
+    }
     
     console.log('Navigating to task:', navigationData);
+    console.log('Available workspaces:', data.workspaces.map(w => ({ id: w.id, name: w.name })));
     
-    // Tìm workspace theo tên
+    // Kiểm tra dữ liệu navigation
+    if (!navigationData.workspaceName || !navigationData.boardName || !navigationData.groupName) {
+      console.error('Missing navigation data:', navigationData);
+      alert('Thông tin điều hướng không đầy đủ. Vui lòng thử lại sau.');
+      return;
+    }
+    
+    // Tìm workspace theo tên (case-insensitive)
     const targetWorkspace = data.workspaces.find(w => 
-      w.name === navigationData.workspaceName
+      w.name.toLowerCase() === navigationData.workspaceName.toLowerCase()
     );
     
     if (!targetWorkspace) {
-      alert(`Không tìm thấy workspace "${navigationData.workspaceName}"`);
+      console.error(`Workspace not found: "${navigationData.workspaceName}"`);
+      console.log('Available workspace names:', data.workspaces.map(w => w.name));
+      alert(`Không tìm thấy workspace "${navigationData.workspaceName}".\n\nWorkspaces có sẵn:\n${data.workspaces.map(w => `- ${w.name}`).join('\n')}`);
       return;
     }
     
-    // Tìm board theo tên
+    console.log('Found workspace:', targetWorkspace);
+    
+    // Tìm board theo tên (case-insensitive)
     const targetBoard = targetWorkspace.boards.find(b => 
-      b.name === navigationData.boardName
+      b.name.toLowerCase() === navigationData.boardName.toLowerCase()
     );
     
     if (!targetBoard) {
-      alert(`Không tìm thấy board "${navigationData.boardName}" trong workspace "${navigationData.workspaceName}"`);
+      console.error(`Board not found: "${navigationData.boardName}" in workspace "${navigationData.workspaceName}"`);
+      console.log('Available board names:', targetWorkspace.boards.map(b => b.name));
+      alert(`Không tìm thấy board "${navigationData.boardName}" trong workspace "${navigationData.workspaceName}".\n\nBoards có sẵn:\n${targetWorkspace.boards.map(b => `- ${b.name}`).join('\n')}`);
       return;
     }
+    
+    console.log('Found board:', targetBoard);
     
     // Chuyển đến workspace và board trước
     setCurrentWorkspaceId(targetWorkspace.id);

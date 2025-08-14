@@ -1,13 +1,17 @@
 package com.example.workmanagementbackend.service;
 
 import com.example.workmanagementbackend.dto.NotificationDTO;
+import com.example.workmanagementbackend.dto.TaskDTO;
 import com.example.workmanagementbackend.entity.Notification;
 import com.example.workmanagementbackend.repository.NotificationRepository;
-import com.example.workmanagementbackend.event.TaskNotificationEvent;
-// Removed service imports to avoid circular dependency
+
+import com.example.workmanagementbackend.service.TaskService;
+import com.example.workmanagementbackend.service.GroupService;
+import com.example.workmanagementbackend.service.BoardService;
+import com.example.workmanagementbackend.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -27,11 +31,11 @@ public class NotificationService {
     
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    // Temporarily remove these dependencies to avoid circular dependency
-    // private final TaskService taskService;
-    // private final GroupService groupService;
-    // private final BoardService boardService;
-    // private final WorkspaceService workspaceService;
+    // Service dependencies for getting task location information
+    private final TaskService taskService;
+    private final GroupService groupService;
+    private final BoardService boardService;
+    private final WorkspaceService workspaceService;
     
     /**
      * Send a real-time notification to a specific user
@@ -276,18 +280,87 @@ public class NotificationService {
     
     /**
      * Get task location information (workspace, board, group)
-     * Temporarily simplified to avoid circular dependency
+     * Get actual names from database to avoid navigation errors
      */
     private TaskLocationInfo getTaskLocationInfo(Long taskId) {
-        // For now, return basic info to avoid circular dependency
-        return new TaskLocationInfo(
-            "Task " + taskId,
-            null,
-            "Workspace",
-            "Board", 
-            "Group",
-            "Admin"
-        );
+        try {
+            // Get task to find group ID
+            var task = taskService.getTaskById(taskId);
+            if (task == null) {
+                log.warn("Task not found for ID: {}", taskId);
+                return new TaskLocationInfo(
+                    "Unknown Task",
+                    null,
+                    "Unknown Workspace",
+                    "Unknown Board", 
+                    "Unknown Group",
+                    "Unknown"
+                );
+            }
+            
+            // Get group to find board ID
+            var group = groupService.getGroupById(task.getGroupId());
+            if (group == null) {
+                log.warn("Group not found for ID: {}", task.getGroupId());
+                return new TaskLocationInfo(
+                    task.getName(),
+                    task.getDueDate(),
+                    "Unknown Workspace",
+                    "Unknown Board", 
+                    "Unknown Group",
+                    "Unknown"
+                );
+            }
+            
+            // Get board to find workspace ID
+            var board = boardService.getBoardById(group.getBoardId());
+            if (board == null) {
+                log.warn("Board not found for ID: {}", group.getBoardId());
+                return new TaskLocationInfo(
+                    task.getName(),
+                    task.getDueDate(),
+                    "Unknown Workspace",
+                    "Unknown Board", 
+                    group.getName(),
+                    "Unknown"
+                );
+            }
+            
+            // Get workspace
+            var workspace = workspaceService.getWorkspaceById(board.getWorkspaceId());
+            if (workspace == null) {
+                log.warn("Workspace not found for ID: {}", board.getWorkspaceId());
+                return new TaskLocationInfo(
+                    task.getName(),
+                    task.getDueDate(),
+                    "Unknown Workspace",
+                    board.getName(), 
+                    group.getName(),
+                    "Unknown"
+                );
+            }
+            
+            // Return actual names from database
+            return new TaskLocationInfo(
+                task.getName(),
+                task.getDueDate(),
+                workspace.getName(),
+                board.getName(), 
+                group.getName(),
+                task.getAssignedToName() != null ? task.getAssignedToName() : "Unknown"
+            );
+            
+        } catch (Exception e) {
+            log.error("Error getting task location info for task ID {}: {}", taskId, e.getMessage());
+            return new TaskLocationInfo(
+                "Unknown Task",
+                null,
+                "Unknown Workspace",
+                "Unknown Board", 
+                "Unknown Group",
+                "Unknown"
+            );
+        }
     }
     
     /**
@@ -465,81 +538,7 @@ public class NotificationService {
         }
     }
     
-    /**
-     * Event listener for task notification events
-     * This breaks the circular dependency by listening to events instead of direct calls
-     */
-    @EventListener
-    public void handleTaskNotificationEvent(TaskNotificationEvent event) {
-        try {
-            log.info("Received task notification event: taskId={}, userId={}, type={}", 
-                event.getTaskId(), event.getUserId(), event.getNotificationType());
-            
-            // Get task details
-            String taskName = "Unknown Task";
-            String dueDate = null;
-            String workspaceName = "Unknown Workspace";
-            String boardName = "Unknown Board";
-            String groupName = "Unknown Group";
-            String assignedBy = "Unknown User";
-            
-            // Simplified approach to avoid circular dependency
-            taskName = "Task " + event.getTaskId();
-            dueDate = null;
-            groupName = "Group";
-            boardName = "Board";
-            workspaceName = "Workspace";
-            assignedBy = "User " + event.getCreatedById();
-            
-            // Create and send notification
-            NotificationDTO notificationDTO = new NotificationDTO();
-            notificationDTO.setUserId(event.getUserId());
-            notificationDTO.setType(event.getNotificationType());
-            notificationDTO.setTitle(getNotificationTitle(event.getNotificationType()));
-            notificationDTO.setMessage(createDetailedTaskMessage(
-                event.getNotificationType(),
-                taskName,
-                dueDate,
-                workspaceName,
-                boardName,
-                groupName,
-                assignedBy
-            ));
-            notificationDTO.setMetadata(String.format(
-                "{\"taskId\":\"%d\",\"taskName\":\"%s\",\"dueDate\":\"%s\",\"workspaceName\":\"%s\",\"boardName\":\"%s\",\"groupName\":\"%s\",\"assignedBy\":\"%s\"}",
-                event.getTaskId(),
-                taskName != null ? taskName : "",
-                dueDate != null ? dueDate : "",
-                workspaceName != null ? workspaceName : "",
-                boardName != null ? boardName : "",
-                groupName != null ? groupName : "",
-                assignedBy != null ? assignedBy : ""
-            ));
-            notificationDTO.setIsRead(false);
-            notificationDTO.setCreatedAt(LocalDateTime.now());
-            
-            sendNotification(notificationDTO);
-            
-        } catch (Exception e) {
-            log.error("Error handling task notification event: {}", e.getMessage(), e);
-        }
-    }
+
     
-    /**
-     * Get notification title based on type
-     */
-    private String getNotificationTitle(Notification.NotificationType type) {
-        switch (type) {
-            case TASK_ASSIGNED:
-                return "Task được giao";
-            case TASK_UPDATED:
-                return "Task được cập nhật";
-            case TASK_COMPLETED:
-                return "Task hoàn thành";
-            case DEADLINE_WARNING:
-                return "Cảnh báo deadline";
-            default:
-                return "Thông báo task";
-        }
-    }
+
 }

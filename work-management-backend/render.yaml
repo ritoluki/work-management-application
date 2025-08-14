@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: work-management-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: work-management-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: work-management-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: work-management-db
+          property: password
+      - key: FRONTEND_URL
+        value: https://your-frontend-app.onrender.com
+
+databases:
+  - name: work-management-db
+    databaseName: work_management_db
+    user: workuser
+    plan: free
