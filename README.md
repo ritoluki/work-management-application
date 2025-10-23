@@ -1,7 +1,8 @@
 # Work Management Application
-start backend : https://work-management-backend.onrender.com/
+Steps:
+1. Start backend : https://work-management-backend.onrender.com/
+2. Start fontend : https://work-management-application.vercel.app/
 
-start fontend : https://work-management-application.vercel.app/
 
 A comprehensive work management application built with React frontend and Spring Boot backend.
 
