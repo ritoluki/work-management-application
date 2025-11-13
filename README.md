@@ -1,6 +1,6 @@
 # Work Management Application
 Steps:
-1. Start backend : https://work-management-backend.onrender.com/ ( 5 - 10 mimutes )
+1. Start backend : https://work-management-backend.onrender.com/ ( 5 - 10 minutes )
 2. then click -> https://work-management-application.vercel.app/
 
 
