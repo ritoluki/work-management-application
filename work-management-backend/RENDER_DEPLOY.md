@@ -19,9 +19,12 @@ PORT=8080
 ### Using Render PostgreSQL (Recommended)
 
 1. Create a new PostgreSQL database on Render
-2. Render will provide a `DATABASE_URL` in the format: `postgresql://user:password@host:port/database`
-3. Set the `DATABASE_URL` environment variable to this connection string
-4. The application will automatically detect and use PostgreSQL driver and dialect
+2. Render will provide a `DATABASE_URL` in the format: `postgres://user:password@host:port/database`
+3. Convert it to JDBC format: `jdbc:postgresql://host:port/database` (or let Spring Boot auto-convert it)
+4. Set the `DATABASE_URL` environment variable to the JDBC-formatted connection string
+5. The application will automatically detect and use PostgreSQL driver and dialect
+
+**Note**: If you use Render's native `postgres://` URL format, Spring Boot 2.4+ can automatically convert it to the JDBC format. For older versions or explicit control, use the `jdbc:postgresql://` format directly.
 
 ### Using External MySQL
 
