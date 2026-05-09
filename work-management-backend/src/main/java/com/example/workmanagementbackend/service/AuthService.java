@@ -52,7 +52,9 @@ public class AuthService {
         user.setLastName(lastName);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setRole(User.UserRole.MEMBER); // Mặc định role là MEMBER
+        // User đầu tiên trong hệ thống tự động là OWNER
+        boolean isFirstUser = userRepository.count() == 0;
+        user.setRole(isFirstUser ? User.UserRole.OWNER : User.UserRole.MEMBER);
         user.setIsActive(true);
 
         return userRepository.save(user);
