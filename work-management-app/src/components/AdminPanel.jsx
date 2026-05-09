@@ -20,11 +20,11 @@ const AdminPanel = ({ onClose, currentUser }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ 
-    firstName: '', 
-    lastName: '', 
-    email: '', 
+    firstName: '',
+    lastName: '',
+    email: '',
     password: '',
-    role: 'MEMBER' 
+    role: 'MEMBER'
   });
 
   // Load data on mount
@@ -33,7 +33,6 @@ const AdminPanel = ({ onClose, currentUser }) => {
     loadWorkspaces();
   }, []);
 
-  // Load boards when workspace changes
   useEffect(() => {
     if (selectedWorkspace) {
       loadBoards(selectedWorkspace.id);

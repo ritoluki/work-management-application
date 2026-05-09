@@ -72,7 +72,6 @@ const TaskRow = ({ task, allTasks, searchFilter, onUpdateTask, onDeleteTask, gro
     }));
   }, [task]);
 
-  // Generate unique task name with auto-suffix if needed (for editing, case-insensitive)
   const generateUniqueTaskName = (proposedName, currentTaskId) => {
     const baseName = proposedName.trim();
     const existingNames = allTasks

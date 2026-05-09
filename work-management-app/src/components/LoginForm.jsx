@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Github, Eye, EyeOff } from 'lucide-react';
-import { DEMO_ACCOUNTS, getRoleColor, getRoleBadge, getRoleIcon } from '../utils/mockUsers';
 import { authService } from '../services/authService';
 
 const LoginForm = ({ onLogin, onSwitchToRegister }) => {
@@ -15,14 +14,12 @@ const LoginForm = ({ onLogin, onSwitchToRegister }) => {
     setError('');
     
     try {
-      // Validation - check required fields
       if (!credentials.email.trim() || !credentials.password.trim()) {
         setError('Vui lòng nhập đầy đủ tài khoản và mật khẩu');
         setIsLoading(false);
         return;
       }
       
-      // Password length validation
       if (credentials.password.length < 6) {
         setError('Mật khẩu phải có ít nhất 6 ký tự');
         setIsLoading(false);

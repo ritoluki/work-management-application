@@ -10,7 +10,7 @@ TỔNG QUAN HỆ THỐNG
 ==================
 
 Hệ thống phân quyền được thiết kế theo mô hình RBAC (Role-Based Access Control) với 
-5 cấp độ quyền hạn khác nhau, áp dụng trên 4 cấp độ resource chính:
+4 cấp độ quyền hạn khác nhau, áp dụng trên 4 cấp độ resource chính:
 
 - WORKSPACE LEVEL: Quản lý toàn bộ không gian làm việc
 - BOARD LEVEL: Quản lý boards và projects
@@ -21,37 +21,31 @@ ROLES VÀ HIERARCHY
 ==================
 
 📊 ROLE HIERARCHY (từ cao xuống thấp):
-1. OWNER 👑 - Chủ sở hữu
-2. ADMIN ⚡ - Quản trị viên  
-3. MANAGER 📋 - Quản lý
-4. MEMBER 👤 - Thành viên
-5. VIEWER 👁️ - Người xem
+1. ADMIN ⚡ - Quản trị viên
+2. MANAGER 📋 - Quản lý
+3. MEMBER 👤 - Thành viên
+4. VIEWER 👁️ - Người xem
 
 ROLE DEFINITIONS
 ================
 
-1. OWNER (Chủ sở hữu) 👑
+1. ADMIN (Quản trị viên) ⚡
    - Mô tả: Quyền hạn cao nhất trong workspace
-   - Use case: CEO, Founder, Project Director
-   - Đặc điểm: Không thể bị remove hoặc downgrade
-   - Số lượng: Ít nhất 1 Owner/workspace
+   - Use case: CEO, Product Manager, Engineering Manager, Project Director
+   - Đặc điểm: Toàn quyền quản lý workspace, members và tất cả resources
+   - Số lượng: Ít nhất 1 Admin/workspace
 
-2. ADMIN (Quản trị viên) ⚡
-   - Mô tả: Quản lý operations, không thể xóa workspace
-   - Use case: Product Manager, Engineering Manager
-   - Đặc điểm: Có thể manage members nhưng không thể đổi role Owner
-
-3. MANAGER (Quản lý) 📋  
-   - Mô tả: Quản lý specific boards hoặc teams
+2. MANAGER (Quản lý) 📋  
+   - Mô tả: Quản lý operations, boards và teams
    - Use case: Feature Lead, Team Lead, Senior Developer
-   - Đặc điểm: Board-specific permissions
+   - Đặc điểm: Có thể manage members nhưng không thể đổi role Admin
 
-4. MEMBER (Thành viên) 👤
+3. MEMBER (Thành viên) 👤
    - Mô tả: User làm việc với tasks được assign
    - Use case: Developer, Designer, QA, Content Writer
    - Đặc điểm: Chỉ có thể update tasks được assign cho họ
 
-5. VIEWER (Người xem) 👁️
+4. VIEWER (Người xem) 👁️
    - Mô tả: Chỉ xem, không chỉnh sửa
    - Use case: Stakeholder, Client, Analyst, Intern
    - Đặc điểm: Read-only access
@@ -61,90 +55,89 @@ PERMISSION MATRIX CHI TIẾT
 
 📌 WORKSPACE PERMISSIONS
 ========================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Tạo workspace               | ✅    | ✅    | ❌      | ❌     | ❌
-Xóa workspace               | ✅    | ❌    | ❌      | ❌     | ❌
-Archive workspace           | ✅    | ✅    | ❌      | ❌     | ❌
-Sửa workspace settings      | ✅    | ✅    | ❌      | ❌     | ❌
-Invite members              | ✅    | ✅    | ✅      | ❌     | ❌
-Remove members              | ✅    | ✅    | ✅*     | ❌     | ❌
-Change roles                | ✅    | ✅**  | ❌      | ❌     | ❌
-View workspace analytics    | ✅    | ✅    | ✅      | ❌     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Tạo workspace               | ✅    | ❌      | ❌     | ❌
+Xóa workspace               | ✅    | ❌      | ❌     | ❌
+Archive workspace           | ✅    | ❌      | ❌     | ❌
+Sửa workspace settings      | ✅    | ❌      | ❌     | ❌
+Invite members              | ✅    | ✅      | ❌     | ❌
+Remove members              | ✅    | ✅*     | ❌     | ❌
+Change roles                | ✅    | ❌      | ❌     | ❌
+View workspace analytics    | ✅    | ✅      | ❌     | ❌
 
 📌 BOARD PERMISSIONS  
 ====================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Tạo board                   | ✅    | ✅    | ✅      | ❌     | ❌
-Xóa board                   | ✅    | ✅    | ❌      | ❌     | ❌
-Archive board               | ✅    | ✅    | ✅      | ❌     | ❌
-Sửa board settings          | ✅    | ✅    | ✅      | ❌     | ❌
-Assign board managers       | ✅    | ✅    | ❌      | ❌     | ❌
-View board analytics        | ✅    | ✅    | ✅      | ❌     | ❌
-Export board data           | ✅    | ✅    | ✅      | ❌     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Tạo board                   | ✅    | ✅      | ❌     | ❌
+Xóa board                   | ✅    | ❌      | ❌     | ❌
+Archive board               | ✅    | ✅      | ❌     | ❌
+Sửa board settings          | ✅    | ✅      | ❌     | ❌
+Assign board managers       | ✅    | ❌      | ❌     | ❌
+View board analytics        | ✅    | ✅      | ❌     | ❌
+Export board data           | ✅    | ✅      | ❌     | ❌
 
 📌 GROUP PERMISSIONS
 ====================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Tạo group                   | ✅    | ✅    | ✅      | ❌     | ❌
-Xóa group                   | ✅    | ✅    | ✅      | ❌     | ❌
-Sửa group settings          | ✅    | ✅    | ✅      | ❌     | ❌
-Archive group               | ✅    | ✅    | ✅      | ❌     | ❌
-Reorder groups              | ✅    | ✅    | ✅      | ❌     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Tạo group                   | ✅    | ✅      | ❌     | ❌
+Xóa group                   | ✅    | ✅      | ❌     | ❌
+Sửa group settings          | ✅    | ✅      | ❌     | ❌
+Archive group               | ✅    | ✅      | ❌     | ❌
+Reorder groups              | ✅    | ✅      | ❌     | ❌
 
 📌 TASK PERMISSIONS
 ===================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Tạo task                    | ✅    | ✅    | ✅      | ❌     | ❌
-Xóa task                    | ✅    | ✅    | ✅      | ❌***  | ❌
-Sửa any task                | ✅    | ✅    | ✅      | ❌     | ❌
-Sửa assigned task           | ✅    | ✅    | ✅      | ✅**** | ❌
-Assign task                 | ✅    | ✅    | ✅      | ❌     | ❌
-Update task status          | ✅    | ✅    | ✅      | ✅**** | ❌
-Tạo subtasks                | ✅    | ✅    | ✅      | ❌     | ❌
-Move task between groups    | ✅    | ✅    | ✅      | ❌     | ❌
-Set task priority           | ✅    | ✅    | ✅      | ✅**** | ❌
-Set due dates               | ✅    | ✅    | ✅      | ✅**** | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Tạo task                    | ✅    | ✅      | ❌     | ❌
+Xóa task                    | ✅    | ✅      | ❌***  | ❌
+Sửa any task                | ✅    | ✅      | ❌     | ❌
+Sửa assigned task           | ✅    | ✅      | ✅**** | ❌
+Assign task                 | ✅    | ✅      | ❌     | ❌
+Update task status          | ✅    | ✅      | ✅**** | ❌
+Tạo subtasks                | ✅    | ✅      | ❌     | ❌
+Move task between groups    | ✅    | ✅      | ❌     | ❌
+Set task priority           | ✅    | ✅      | ✅**** | ❌
+Set due dates               | ✅    | ✅      | ✅**** | ❌
 
 📌 COMMENT PERMISSIONS
 ======================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Add comment                 | ✅    | ✅    | ✅      | ✅     | ❌
-Edit own comment            | ✅    | ✅    | ✅      | ✅     | ❌
-Delete own comment          | ✅    | ✅    | ✅      | ✅     | ❌
-Delete any comment          | ✅    | ✅    | ❌      | ❌     | ❌
-Mention users               | ✅    | ✅    | ✅      | ✅     | ❌
-React to comments           | ✅    | ✅    | ✅      | ✅     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Add comment                 | ✅    | ✅      | ✅     | ❌
+Edit own comment            | ✅    | ✅      | ✅     | ❌
+Delete own comment          | ✅    | ✅      | ✅     | ❌
+Delete any comment          | ✅    | ❌      | ❌     | ❌
+Mention users               | ✅    | ✅      | ✅     | ❌
+React to comments           | ✅    | ✅      | ✅     | ❌
 
 📌 FILE/ATTACHMENT PERMISSIONS
 ==============================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Upload files                | ✅    | ✅    | ✅      | ✅     | ❌
-Download files              | ✅    | ✅    | ✅      | ✅     | ✅
-Delete own files            | ✅    | ✅    | ✅      | ✅     | ❌
-Delete any files            | ✅    | ✅    | ✅      | ❌     | ❌
-Share files externally      | ✅    | ✅    | ✅      | ❌     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Upload files                | ✅    | ✅      | ✅     | ❌
+Download files              | ✅    | ✅      | ✅     | ✅
+Delete own files            | ✅    | ✅      | ✅     | ❌
+Delete any files            | ✅    | ✅      | ❌     | ❌
+Share files externally      | ✅    | ✅      | ❌     | ❌
 
 📌 NOTIFICATION & SETTINGS
 ===========================
-Chức năng                    | Owner | Admin | Manager | Member | Viewer
----------------------------- |-------|-------|---------|--------|--------
-Manage notifications        | ✅    | ✅    | ✅      | ✅     | ✅
-Export data                 | ✅    | ✅    | ✅      | ❌     | ❌
-View analytics              | ✅    | ✅    | ✅      | ❌     | ❌
-Access audit logs           | ✅    | ✅    | ❌      | ❌     | ❌
-Manage integrations         | ✅    | ✅    | ❌      | ❌     | ❌
+Chức năng                    | Admin | Manager | Member | Viewer
+---------------------------- |-------|---------|--------|--------
+Manage notifications        | ✅    | ✅      | ✅     | ✅
+Export data                 | ✅    | ✅      | ❌     | ❌
+View analytics              | ✅    | ✅      | ❌     | ❌
+Access audit logs           | ✅    | ❌      | ❌     | ❌
+Manage integrations         | ✅    | ❌      | ❌     | ❌
 
 GHI CHÚ VÀ ĐIỀU KIỆN ĐặC BIỆT
 ==============================
 
-* Manager chỉ remove được Members, không thể remove Admin hoặc Owner
-** Admin có thể đổi role nhưng không đổi role của Owner hoặc gán Owner cho người khác  
+* Manager chỉ remove được Members, không thể remove Admin
 *** Member chỉ được xóa task do chính họ tạo
 **** Member chỉ được thực hiện actions trên tasks được assign cho họ (không bao gồm tạo task mới)
 
@@ -159,9 +152,9 @@ NGUYÊN TẮC BẢO MẬT
 2. ROLE-BASED ACCESS
    - Permissions được gán theo role, không theo individual user
 
-3. OWNERSHIP PROTECTION  
-   - Owner không thể bị remove hoặc downgrade
-   - Mỗi workspace luôn phải có ít nhất 1 Owner
+3. ADMIN PROTECTION  
+   - Admin có quyền hạn cao nhất trong workspace
+   - Mỗi workspace luôn phải có ít nhất 1 Admin
 
 4. AUDIT TRAIL
    - Log tất cả thao tác quan trọng (tạo/xóa workspace, đổi role, v.v.)
@@ -220,7 +213,7 @@ updateUserRole(userId, workspaceId, newRole)
 removeUserFromWorkspace(userId, workspaceId)
 
 // Workspace management
-createWorkspace(ownerId, workspaceName)
+createWorkspace(adminId, workspaceName)
 inviteToWorkspace(workspaceId, email, role)
 getWorkspaceMembers(workspaceId)
 

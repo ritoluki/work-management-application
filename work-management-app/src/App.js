@@ -2,14 +2,35 @@ import React, { useState, useEffect } from 'react';
 import WorkManagement from './components/WorkManagement';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
+import Forbidden from './components/Forbidden';
+import NotFound from './components/NotFound';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { authService } from './services/authService';
 import { ThemeProvider } from './context/ThemeContext';
 import './App.css';
+
+function RequireAuth({ children }) {
+  const savedUser = localStorage.getItem('user');
+  
+  if (!savedUser) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function RedirectIfAuthed({ children }) {
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    return <Navigate to="/workspaces" replace />;
+  }
+  return children;
+}
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +63,7 @@ function App() {
     setUser(userData);
     // Lưu user vào localStorage khi đăng nhập thành công
     localStorage.setItem('user', JSON.stringify(userData));
+    navigate('/workspaces');
   };
 
   const handleLogout = () => {
@@ -68,21 +90,38 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="App">
-        {user ? (
-          <WorkManagement user={user} onLogout={handleLogout} />
-        ) : showRegister ? (
-          <RegisterForm 
-            onLogin={handleLogin} 
-            onSwitchToLogin={handleSwitchToLogin}
-          />
-        ) : (
-          <LoginForm 
-            onLogin={handleLogin} 
-            onSwitchToRegister={handleSwitchToRegister}
-          />
-        )}
-      </div>
+      <Routes>
+        <Route
+          path="/login"
+          element={(
+            <RedirectIfAuthed>
+              <LoginForm onLogin={handleLogin} onSwitchToRegister={() => navigate('/register')} />
+            </RedirectIfAuthed>
+          )}
+        />
+        <Route
+          path="/register"
+          element={(
+            <RedirectIfAuthed>
+              <RegisterForm onLogin={handleLogin} onSwitchToLogin={() => navigate('/login')} />
+            </RedirectIfAuthed>
+          )}
+        />
+        <Route
+          path="/"
+          element={<Navigate to={user ? '/workspaces' : '/login'} replace />}
+        />
+        <Route
+          path="/workspaces/*"
+          element={(
+            <RequireAuth>
+              <WorkManagement user={user} onLogout={handleLogout} />
+            </RequireAuth>
+          )}
+        />
+        <Route path="/403" element={<Forbidden />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </ThemeProvider>
   );
 }

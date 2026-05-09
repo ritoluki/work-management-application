@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation, Link, Routes, Route, Navigate } from 'react-router-dom';
 import { ChevronDown, Plus, Edit2, Trash2, Check, Search, X } from "lucide-react";
 import TaskGroup from './TaskGroup';
 import UserDropdown from './UserDropdown';
@@ -16,6 +17,9 @@ import { groupService } from '../services/groupService';
 import { taskService } from '../services/taskService';
 
 const WorkManagement = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const params = useParams();
+  const location = useLocation();
   const [data, setData] = useState({ workspaces: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,10 +51,31 @@ const WorkManagement = ({ user, onLogout }) => {
   const currentWorkspace = data.workspaces.find(w => w.id === currentWorkspaceId);
   const currentBoard = currentWorkspace?.boards.find(b => b.id === currentBoardId);
 
-  // Load workspaces when component mounts
+  // Sync route -> state on mount and when params change
   useEffect(() => {
-    loadWorkspaces();
-  }, []);
+    // Chỉ load workspaces khi user đã được xác thực
+    if (user) {
+      loadWorkspaces();
+    }
+  }, [user]); // loadWorkspaces không cần dependency vì nó stable
+
+  useEffect(() => {
+    // Expected paths:
+    // /workspaces
+    // /workspaces/:workspaceId
+    // /workspaces/:workspaceId/boards/:boardId
+    const parts = location.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'workspaces') {
+      const wsId = parts[1] ? Number(parts[1]) : null;
+      if (wsId && !Number.isNaN(wsId)) {
+        setCurrentWorkspaceId(wsId);
+      }
+      const bId = parts[2] === 'boards' && parts[3] ? Number(parts[3]) : null;
+      if (bId && !Number.isNaN(bId)) {
+        setCurrentBoardId(bId);
+      }
+    }
+  }, [location.pathname]);
 
   // Load tasks for current board when it changes
   useEffect(() => {
@@ -93,6 +118,13 @@ const WorkManagement = ({ user, onLogout }) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Kiểm tra xem user đã đăng nhập chưa
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       const response = await workspaceService.getAllWorkspaces();
       
       // Transform data để phù hợp với cấu trúc hiện tại
@@ -107,11 +139,35 @@ const WorkManagement = ({ user, onLogout }) => {
       
       // Load boards cho workspace đầu tiên
       if (transformedData.workspaces.length > 0) {
-        await loadBoardsForWorkspace(transformedData.workspaces[0].id);
+        const desiredIdFromUrl = (() => {
+          const parts = window.location.pathname.split('/').filter(Boolean);
+          if (parts[0] === 'workspaces' && parts[1]) {
+            const id = Number(parts[1]);
+            return Number.isNaN(id) ? null : id;
+          }
+          return null;
+        })();
+
+        const workspaceIdToLoad = desiredIdFromUrl || transformedData.workspaces[0].id;
+        setCurrentWorkspaceId(workspaceIdToLoad);
+        if (!desiredIdFromUrl) {
+          navigate(`/workspaces/${workspaceIdToLoad}`, { replace: true });
+        }
+        await loadBoardsForWorkspace(workspaceIdToLoad);
       }
     } catch (err) {
-      setError('Failed to load workspaces');
       console.error('Error loading workspaces:', err);
+      
+      // Nếu lỗi 401, có nghĩa là token không hợp lệ hoặc hết hạn
+      if (err.response?.status === 401) {
+        // Token không hợp lệ, chuyển về trang login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        onLogout();
+        return;
+      }
+      
+      setError('Failed to load workspaces');
     } finally {
       setLoading(false);
     }
@@ -245,6 +301,7 @@ const WorkManagement = ({ user, onLogout }) => {
 
   const handleSwitchWorkspace = (workspaceId) => {
     setCurrentWorkspaceId(workspaceId);
+    navigate(`/workspaces/${workspaceId}`);
     
     // chuyển sang board đầu tiên của workspace hoặc null nếu không có board
     const workspace = data.workspaces.find(w => w.id === workspaceId);
@@ -890,6 +947,17 @@ const WorkManagement = ({ user, onLogout }) => {
     }, 1000); // Delay 1 giây để đảm bảo data đã load
   };
 
+  // User authentication check
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl text-gray-600">Please login to continue</h2>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -917,7 +985,6 @@ const WorkManagement = ({ user, onLogout }) => {
     );
   }
 
-  // Mảng màu cho icon project
   const boardColors = [
     'bg-blue-500',
     'bg-green-500',
@@ -1284,7 +1351,10 @@ const WorkManagement = ({ user, onLogout }) => {
                     style={{ position: 'relative' }}
                   >
                     <div
-                      onClick={() => setCurrentBoardId(board.id)}
+                      onClick={() => {
+                        setCurrentBoardId(board.id);
+                        navigate(`/workspaces/${currentWorkspaceId}/boards/${board.id}`);
+                      }}
                       className="flex items-center gap-2 flex-1"
                     >
                       {/* Icon đại diện cho project/board, mỗi project 1 màu khác nhau */}

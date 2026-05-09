@@ -10,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor để thêm token (sau này sẽ dùng cho authentication)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');

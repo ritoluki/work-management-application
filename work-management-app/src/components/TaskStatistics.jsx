@@ -46,14 +46,14 @@ const TaskStatistics = () => {
 
   useEffect(() => {
     loadTaskStatistics();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
   const loadTaskStatistics = async () => {
     setLoading(true);
     try {
       // Lấy tất cả tasks từ tất cả boards
       const response = await taskService.getAllTasks();
-      const allTasks = response.data || response; // Handle both response.data and direct array
+      const allTasks = response.data || response; 
       
       if (!Array.isArray(allTasks)) {
         console.error('getAllTasks did not return an array:', allTasks);
