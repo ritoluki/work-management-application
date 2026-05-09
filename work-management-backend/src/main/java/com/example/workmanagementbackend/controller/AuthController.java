@@ -1,10 +1,12 @@
 package com.example.workmanagementbackend.controller;
 
 import com.example.workmanagementbackend.entity.User;
+import com.example.workmanagementbackend.repository.UserRepository;
 import com.example.workmanagementbackend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -13,6 +15,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody LoginRequest request) {
@@ -47,6 +52,23 @@ public class AuthController {
         } else {
             return ResponseEntity.status(401).build();
         }
+    }
+
+    // Endpoint tạm thời: promote user duy nhất trong DB lên OWNER
+    // Xóa endpoint này sau khi đã setup xong
+    @PostMapping("/init-owner")
+    public ResponseEntity<String> initOwner(@RequestParam String email) {
+        List<User> allUsers = userRepository.findAll();
+        if (allUsers.size() != 1) {
+            return ResponseEntity.badRequest().body("Chỉ dùng được khi có đúng 1 user trong hệ thống");
+        }
+        User user = allUsers.get(0);
+        if (!user.getEmail().equals(email)) {
+            return ResponseEntity.badRequest().body("Email không khớp");
+        }
+        user.setRole(User.UserRole.OWNER);
+        userRepository.save(user);
+        return ResponseEntity.ok("Đã promote " + email + " lên OWNER");
     }
 
     @PostMapping("/change-password")
