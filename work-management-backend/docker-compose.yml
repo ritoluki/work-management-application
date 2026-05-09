@@ -26,13 +26,16 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DATABASE_URL: jdbc:postgresql://db:5432/work_management_db?sslmode=disable
+      # Khớp với application-prod.properties
+      DB_HOST: db          # "db" = tên service postgres ở trên
+      DB_PORT: 5432
+      DB_NAME: work_management_db
       DB_USERNAME: work
       DB_PASSWORD: workpass
       FRONTEND_URL: http://localhost:3000
+      PORT: 8080
     ports:
       - "8080:8080"
 
 volumes:
   pgdata:
-
