@@ -1,4 +1,6 @@
-FROM openjdk:17-jdk-slim
+# Use Eclipse Temurin (recommended replacement for deprecated OpenJDK images)
+# Note: Using alpine variant as eclipse-temurin doesn't have a -slim tag
+FROM eclipse-temurin:17-jdk-alpine
 
 WORKDIR /app
 
