@@ -44,9 +44,8 @@ const TaskStatistics = () => {
     'EXPIRED': 'Quá hạn'
   };
 
-  useEffect(() => {
-    loadTaskStatistics();
-  }, []); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadTaskStatistics(); }, []);
 
   const loadTaskStatistics = async () => {
     setLoading(true);

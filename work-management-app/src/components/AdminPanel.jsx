@@ -14,7 +14,7 @@ const AdminPanel = ({ onClose, currentUser }) => {
   const [boards, setBoards] = useState([]);
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTaskAssignModal, setShowTaskAssignModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -28,16 +28,11 @@ const AdminPanel = ({ onClose, currentUser }) => {
   });
 
   // Load data on mount
-  useEffect(() => {
-    loadUsers();
-    loadWorkspaces();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadUsers(); loadWorkspaces(); }, []);
 
-  useEffect(() => {
-    if (selectedWorkspace) {
-      loadBoards(selectedWorkspace.id);
-    }
-  }, [selectedWorkspace]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (selectedWorkspace) loadBoards(selectedWorkspace.id); }, [selectedWorkspace]);
 
   // Load tasks when board changes
   useEffect(() => {

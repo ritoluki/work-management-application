@@ -8,14 +8,11 @@ import { userService } from '../services/userService';
 
 const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, onDeleteGroup, onAddTask, onUpdateTask, onDeleteTask, currentUser }) => {
   const [localExpanded, setLocalExpanded] = useState(true);
-  const [hasBeenIndividuallyToggled, setHasBeenIndividuallyToggled] = useState(false);
   const [lastParentState, setLastParentState] = useState(isExpanded);
-  
-  // Sync with parent when parent changes OR reset individual toggle flag
+
+  // Sync with parent when parent state changes
   useEffect(() => {
     if (isExpanded !== undefined && isExpanded !== lastParentState) {
-      // Parent state changed - reset individual toggle and sync
-      setHasBeenIndividuallyToggled(false);
       setLocalExpanded(isExpanded);
       setLastParentState(isExpanded);
     }

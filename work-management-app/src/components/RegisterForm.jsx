@@ -242,13 +242,13 @@ const RegisterForm = ({ onLogin, onSwitchToLogin }) => {
                   className="text-sm text-gray-700"
                 >
                   I agree to the{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+                  <span className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer">
                     Terms of Service
-                  </a>{" "}
+                  </span>{" "}
                   and{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 hover:underline">
+                  <span className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer">
                     Privacy Policy
-                  </a>
+                  </span>
                 </label>
               </div>
 

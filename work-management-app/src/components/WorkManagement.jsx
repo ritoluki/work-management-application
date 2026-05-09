@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams, useLocation, Link, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus, Edit2, Trash2, Check, Search, X } from "lucide-react";
 import TaskGroup from './TaskGroup';
 import UserDropdown from './UserDropdown';
@@ -18,7 +18,6 @@ import { taskService } from '../services/taskService';
 
 const WorkManagement = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const params = useParams();
   const location = useLocation();
   const [data, setData] = useState({ workspaces: [] });
   const [loading, setLoading] = useState(true);
@@ -51,13 +50,8 @@ const WorkManagement = ({ user, onLogout }) => {
   const currentWorkspace = data.workspaces.find(w => w.id === currentWorkspaceId);
   const currentBoard = currentWorkspace?.boards.find(b => b.id === currentBoardId);
 
-  // Sync route -> state on mount and when params change
-  useEffect(() => {
-    // Chỉ load workspaces khi user đã được xác thực
-    if (user) {
-      loadWorkspaces();
-    }
-  }, [user]); // loadWorkspaces không cần dependency vì nó stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (user) loadWorkspaces(); }, [user]);
 
   useEffect(() => {
     // Expected paths:
@@ -77,21 +71,17 @@ const WorkManagement = ({ user, onLogout }) => {
     }
   }, [location.pathname]);
 
-  // Load tasks for current board when it changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const workspace = data.workspaces.find(w => w.id === currentWorkspaceId);
     const board = workspace?.boards.find(b => b.id === currentBoardId);
-    
     if (currentBoardId && board && board.groups) {
-      // Load tasks for all groups in the current board
-      const loadAllTasksForCurrentBoard = async () => {
+      const loadAll = async () => {
         for (const group of board.groups) {
-          if (group.tasks.length === 0) { // Only load if not already loaded
-            await loadTasksForGroup(group.id);
-          }
+          if (group.tasks.length === 0) await loadTasksForGroup(group.id);
         }
       };
-      loadAllTasksForCurrentBoard();
+      loadAll();
     }
   }, [currentBoardId]);
 

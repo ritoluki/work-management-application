@@ -5,7 +5,6 @@ import RegisterForm from './components/RegisterForm';
 import Forbidden from './components/Forbidden';
 import NotFound from './components/NotFound';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { authService } from './services/authService';
 import { ThemeProvider } from './context/ThemeContext';
 import './App.css';
 
@@ -29,7 +28,6 @@ function RedirectIfAuthed({ children }) {
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showRegister, setShowRegister] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,14 +68,6 @@ function App() {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-  };
-
-  const handleSwitchToRegister = () => {
-    setShowRegister(true);
-  };
-
-  const handleSwitchToLogin = () => {
-    setShowRegister(false);
   };
 
   if (loading) {
