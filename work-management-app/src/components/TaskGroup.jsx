@@ -164,7 +164,6 @@ const TaskGroup = ({ group, allGroups, searchFilter, isExpanded, onUpdateGroup, 
             <button
               onClick={() => {
                 setLocalExpanded(!currentExpanded);
-                setHasBeenIndividuallyToggled(true);
               }}
               className="text-gray-400 hover:text-gray-600"
             >
