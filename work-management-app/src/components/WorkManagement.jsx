@@ -71,7 +71,6 @@ const WorkManagement = ({ user, onLogout }) => {
     }
   }, [location.pathname]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const workspace = data.workspaces.find(w => w.id === currentWorkspaceId);
     const board = workspace?.boards.find(b => b.id === currentBoardId);
@@ -83,7 +82,7 @@ const WorkManagement = ({ user, onLogout }) => {
       };
       loadAll();
     }
-  }, [currentBoardId]);
+  }, [currentBoardId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // đóng ws khi click outside
   useEffect(() => {

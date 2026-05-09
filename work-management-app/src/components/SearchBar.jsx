@@ -20,7 +20,6 @@ const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
   }, [isAdminPanelOpen]);
 
   // Debounced search function
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (query.trim()) {
@@ -37,7 +36,7 @@ const SearchBar = ({ data, onResult, onQueryChange, isAdminPanelOpen }) => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [query, data, onQueryChange]);
+  }, [query, data, onQueryChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Perform search across all data
   const performSearch = (searchQuery) => {
